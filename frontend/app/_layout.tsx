@@ -1,26 +1,30 @@
-import '../global.css';
-
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { NativeTabs, Icon, Label, Badge } from 'expo-router/unstable-native-tabs';
+import "../global.css"
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+	return (
+		<NativeTabs minimizeBehavior='automatic'>
+			<NativeTabs.Trigger name="(chat)">
+				<Label>Chat</Label>
+				<Icon sf={{ default: 'ellipses.bubble', selected: 'ellipses.bubble.fill' }} drawable="custom_android_drawable" />
+			</NativeTabs.Trigger>
+			<NativeTabs.Trigger name="(map)">
+				<Icon sf={{ default: 'map', selected: 'map.fill' }} drawable="custom_settings_drawable" />
+				<Label>Map</Label>
+			</NativeTabs.Trigger>
+			<NativeTabs.Trigger name="(home)">
+				<Icon sf={{ default: 'house', selected: 'house.fill' }} drawable="custom_settings_drawable" />
+				<Label>Home</Label>
+			</NativeTabs.Trigger>
+			<NativeTabs.Trigger name="(alerts)">
+				<Icon sf={{ default: 'bell', selected: 'bell.fill' }} drawable="custom_settings_drawable" />
+				<Label>Alerts</Label>
+				<Badge />
+			</NativeTabs.Trigger>
+			<NativeTabs.Trigger name="(more)">
+				<Icon sf={{ default: 'ellipsis', selected: 'ellipsis'}} drawable="custom_settings_drawable" />
+				<Label>More</Label>
+			</NativeTabs.Trigger>
+		</NativeTabs>
+	);
 }
