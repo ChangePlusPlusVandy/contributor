@@ -121,6 +121,8 @@ Navigate to the backend directory and install dependencies:
 
 ```bash
 cd backend
+uv venv
+source .venv/bin/activate OR .venv/Scripts/activate (windows)
 uv sync
 ```
 
