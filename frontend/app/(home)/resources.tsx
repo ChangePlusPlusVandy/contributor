@@ -1,10 +1,9 @@
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import PageLayout from "@/components/PageLayout";
 
 export default function Home() {
     return (
-        <View>
-            <Text>Home Page</Text>
-        </View>
+        <PageLayout title="Home">
+
+        </PageLayout>
     );
 }

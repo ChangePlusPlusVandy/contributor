@@ -1,10 +1,10 @@
-import { Text, View } from 'react-native';
+import PageLayout from "@/components/PageLayout";
 
 
 export default function Alerts() {
     return (
-        <View>
-            <Text>Alerts</Text>
-        </View>
+        <PageLayout title="Alerts">
+
+        </PageLayout>
     );
 }

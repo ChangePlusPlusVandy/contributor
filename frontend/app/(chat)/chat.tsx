@@ -1,10 +1,9 @@
-import { Text, View } from 'react-native';
-
+import PageLayout from "@/components/PageLayout";
 
 export default function Chat() {
     return (
-        <View>
-            <Text>Chat</Text>
-        </View>
+        <PageLayout title="Chat">
+
+        </PageLayout>
     );
 }
