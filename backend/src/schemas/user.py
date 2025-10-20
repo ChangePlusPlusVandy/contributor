@@ -7,7 +7,11 @@ class SignupRequest(BaseModel):
     email: str
     password: str = Field(..., min_length=6)
     name: str
-    date_of_birth: date
+    dob: date
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 class MongoUser(BaseModel):
     supabase_id: str

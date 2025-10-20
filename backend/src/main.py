@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from vendor_auth.routes import router
+from vendor_auth.vendor_auth_routes import router
 
 app = FastAPI()
 app.include_router(router)
