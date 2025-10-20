@@ -180,32 +180,11 @@ The `uv` package manager automatically handles virtual environments. When you ru
 From the `backend` directory:
 
 ```bash
-cd backend
+cd backend/src
 uvicorn main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
-
-**Alternative: Manual Virtual Environment Activation (Optional)**
-
-If you prefer to manually activate the virtual environment:
-
-```bash
-cd backend
-
-# Activate virtual environment
-# macOS/Linux:
-source .venv/bin/activate
-
-# Windows:
-.venv\Scripts\activate
-
-# Then run without uv:
-fastapi dev main.py
-
-# Deactivate when done:
-deactivate
-```
+The API will be available at `http://127.0.0.1:8000`
 
 ### Start the Frontend (Expo)
 
