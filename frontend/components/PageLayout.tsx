@@ -14,7 +14,7 @@ export default function PageLayout({ title, children }: PageLayoutProps ) {
                     </View>
                 </View>
             </SafeAreaView>
-            <View className='bg-white z-10 h-full rounded-t-[40px] transform shadow-xl shadow-blue-500/80'>
+            <View className='bg-white z-10 h-full rounded-t-[18px] transform shadow-xl shadow-blue-500/80'>
                 {children}
             </View>
         </>
