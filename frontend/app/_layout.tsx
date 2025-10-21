@@ -2,11 +2,10 @@ import { NativeTabs, Icon, Label, Badge } from 'expo-router/unstable-native-tabs
 import "../global.css"
 import { setBackgroundColorAsync } from 'expo-system-ui'
 import { useEffect, useState } from 'react';
-import Animated, { FadeOut } from 'react-native-reanimated';
 import StartupAnimation from '@/components/StartupAnimation';
 import { useFonts, Parisienne_400Regular } from "@expo-google-fonts/parisienne";
 import * as SplashScreen from "expo-splash-screen";
-import { View } from 'react-native';
+
 
 SplashScreen.preventAutoHideAsync();
 
