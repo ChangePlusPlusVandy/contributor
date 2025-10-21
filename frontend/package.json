@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@expo-google-fonts/parisienne": "^0.4.1",
+    "@expo/ui": "~0.2.0-beta.7",
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",

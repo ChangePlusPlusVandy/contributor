@@ -5,7 +5,9 @@ import { Image } from "expo-image"
 export default function PageLayout({ title, children }: PageLayoutProps ) {
     return (
         <>
-            <View className='absolute inset-0 bg-blue-200' />
+            <View className='absolute inset-0 bg-slate-100' />
+            <View style={{ position: 'absolute', top: -80, left: -60, width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(99,102,241,0.08)' }} />
+            <View style={{ position: 'absolute', top: -30, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(6,182,212,0.06)' }} />
             <SafeAreaView className='px-6 -mb-5'>
                 <View className='flex flex-row items-center justify-between'>
                     <Text className='text-[40px] font-bold'>{title}</Text>
@@ -14,7 +16,7 @@ export default function PageLayout({ title, children }: PageLayoutProps ) {
                     </View>
                 </View>
             </SafeAreaView>
-            <View className='bg-white z-10 h-full rounded-t-[18px] transform shadow-xl shadow-blue-500/80'>
+            <View className='bg-white z-10 h-full rounded-t-[18px] transform shadow-xl'>
                 {children}
             </View>
         </>
