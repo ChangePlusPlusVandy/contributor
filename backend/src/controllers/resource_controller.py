@@ -1,37 +1,17 @@
 # import requests
-import os
-
 from datetime import datetime, timezone
-from fastapi import HTTPException
-from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorCollection
 from fastapi import HTTPException
 from src.schemas.resource import Resource
 from bson import ObjectId
 
-# loading env for MongoDB key
-load_dotenv()
-mongo_key = os.getenv("MONGODB_URI")
-
-# connect to mongoDB
-try:
-    mongo_client = AsyncIOMotorClient(mongo_key)
-    db = mongo_client["the-contributor"]
-    resources_col = db["resources"]
-
-    print("MongoDB connected successfully!")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    raise
-
-
 # get all resources in the database where "removed" is false
-async def get_all_resources():
+async def get_all_resources(collection: AsyncIOMotorCollection):
     try:
         resources = []
         
         # query for Resources where the field "removed" is false
-        cursor = resources_col.find({"removed": False})
+        cursor = collection.find({"removed": False})
         
         # add all valid queries into list
         async for document in cursor:
@@ -47,7 +27,7 @@ async def get_all_resources():
     
 
 # create a new resource and add to database
-async def create_resource(resource: Resource):
+async def create_resource(resource: Resource, collection: AsyncIOMotorCollection):
     try:
         resource_dict = resource.model_dump()
     
@@ -56,7 +36,7 @@ async def create_resource(resource: Resource):
         resource_dict["created_at"] = datetime.now(timezone.utc)
 
         # insert resource into mongoDB
-        result = await resources_col.insert_one(resource_dict)
+        result = await collection.insert_one(resource_dict)
 
         # return result with id for client use
         resource_dict["_id"] = str(result.inserted_id)
@@ -67,9 +47,9 @@ async def create_resource(resource: Resource):
         raise HTTPException(status_code = 500, detail = "Internal server error.")
     
 
-async def set_removed(resource_id: str):
+async def set_removed(resource_id: str, collection: AsyncIOMotorCollection):
     try:
-        await resources_col.update_one(
+        await collection.update_one(
             {"_id": ObjectId(resource_id)},
             {"$set": {"removed": True}}
         )
