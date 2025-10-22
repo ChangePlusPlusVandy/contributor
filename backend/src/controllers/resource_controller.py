@@ -1,13 +1,23 @@
 # import requests
 from datetime import datetime, timezone
-# from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.asynchronous.collection import AsyncCollection
 from fastapi import HTTPException
 from src.schemas.resource import Resource
 from bson import ObjectId
 
-# get all resources in the database where "removed" is false
-async def get_all_resources(collection: AsyncCollection):
+
+async def get_all_active(collection: AsyncCollection):
+    """
+    Retrieve all resources from the database where "removed" is false.
+
+    Args:
+        collection (AsyncCollection): MongoDB collection instance ("resources")
+
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if active resources successfully fetched
+            - 'resources' (list of dicts): a list of Resource documents
+    """
     try:
         resources = []
         
@@ -29,6 +39,19 @@ async def get_all_resources(collection: AsyncCollection):
 
 # create a new resource and add to database
 async def create_resource(resource: Resource, collection: AsyncCollection):
+    """
+    Create a resource and add it to the database. Before adding, set "removed" to false, add time
+    created, and geolocation information.
+
+    Args:
+        resource (Resource): Pydantic Resource model
+        collection (AsyncCollection): MongoDB collection instance ("resources")
+
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if resource successfully created
+            - 'resource' (dict): Resource dict with added fields (described above)
+    """
     try:
         resource_dict = resource.model_dump()
     
@@ -49,13 +72,26 @@ async def create_resource(resource: Resource, collection: AsyncCollection):
     
 
 async def set_removed(resource_id: str, collection: AsyncCollection):
+    """
+    Set a selected resource's "removed" field to True. The resource remains in the database.
+
+    Args:
+        resource_id (str): MongoDB ObjectId as a string
+        collection (AsyncCollection): MongoDB collection instance ("resources")
+
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if resource found and updated
+            - 'message' (string): message describing successful removal
+            - 'resource_id' (dict): Id of the resource to be updated
+    """
     try:
         await collection.update_one(
             {"_id": ObjectId(resource_id)},
             {"$set": {"removed": True}}
         )
 
-        return {"success": True, "message": "Resource set as removed."}
+        return {"success": True, "message": "Resource set as removed.", "resource_id": resource_id}
     except Exception as e:
         print(f"Error in set_removed controller: {e}")
         raise HTTPException(status_code = 500, detail = "Internal server error.")
