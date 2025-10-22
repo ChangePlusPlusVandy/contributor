@@ -1,20 +1,22 @@
 import os
 
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
+from pymongo.server_api import ServerApi
+from pymongo.asynchronous.collection import AsyncCollection
 
 load_dotenv()
 mongo_key = os.getenv("MONGODB_URI")
 
 class MongoDB:
     # client variable 
-    client: AsyncIOMotorClient | None = None
+    client: AsyncMongoClient | None = None
 
     # methods
     @classmethod
     async def connect_db(cls):
         try:
-            cls.client = AsyncIOMotorClient(mongo_key)
+            cls.client = AsyncMongoClient(mongo_key, server_api = ServerApi('1'))
             
             # await cls.client.admin.command('ping')
             print("MongoDB connected successfully!")
@@ -25,12 +27,12 @@ class MongoDB:
     @classmethod
     async def close_db(cls):
         if cls.client:
-            cls.client.close()
+            await cls.client.close()
             cls.client = None
             print("MongoDB connection closed.")
 
     @classmethod
-    def get_client(cls) -> AsyncIOMotorClient:
+    def get_client(cls) -> AsyncMongoClient:
         if cls.client is None:
             raise Exception("MongoDB not connected.")
         return cls.client
@@ -43,5 +45,5 @@ class MongoDB:
     def get_collection(cls, col_name: str, db_name: str = "the-contributor"):
         return cls._get_database(db_name)[col_name]
     
-async def get_resources_collection() -> AsyncIOMotorClient:
+async def get_resources_collection() -> AsyncCollection:
     return MongoDB.get_collection("resources", "the-contributor")

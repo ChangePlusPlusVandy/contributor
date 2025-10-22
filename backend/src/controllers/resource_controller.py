@@ -1,12 +1,13 @@
 # import requests
 from datetime import datetime, timezone
-from motor.motor_asyncio import AsyncIOMotorCollection
+# from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo.asynchronous.collection import AsyncCollection
 from fastapi import HTTPException
 from src.schemas.resource import Resource
 from bson import ObjectId
 
 # get all resources in the database where "removed" is false
-async def get_all_resources(collection: AsyncIOMotorCollection):
+async def get_all_resources(collection: AsyncCollection):
     try:
         resources = []
         
@@ -27,7 +28,7 @@ async def get_all_resources(collection: AsyncIOMotorCollection):
     
 
 # create a new resource and add to database
-async def create_resource(resource: Resource, collection: AsyncIOMotorCollection):
+async def create_resource(resource: Resource, collection: AsyncCollection):
     try:
         resource_dict = resource.model_dump()
     
@@ -47,7 +48,7 @@ async def create_resource(resource: Resource, collection: AsyncIOMotorCollection
         raise HTTPException(status_code = 500, detail = "Internal server error.")
     
 
-async def set_removed(resource_id: str, collection: AsyncIOMotorCollection):
+async def set_removed(resource_id: str, collection: AsyncCollection):
     try:
         await collection.update_one(
             {"_id": ObjectId(resource_id)},
