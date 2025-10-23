@@ -6,9 +6,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from config.database import MongoDB
-from vendor_auth.vendor_auth_routes import router
+from vendor_auth.routes import router
 from utils.util_routes import router as util_routes
-from admin_auth.admin_auth_routes import router as admin_router
+from admin_auth.routes import router as admin_router
 from routes.resource_routes import router as resource_router
 
 @asynccontextmanager

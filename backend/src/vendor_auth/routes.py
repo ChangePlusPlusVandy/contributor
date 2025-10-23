@@ -2,12 +2,11 @@ import os
 import ssl
 import certifi
 from fastapi import APIRouter, HTTPException, status, Depends
-from pymongo.asynchronous.collection import AsyncCollection
 from dotenv import load_dotenv
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from schemas.user import SignupRequest, LoginRequest, MongoUser
-from vendor_auth.auth_middleware import get_current_user
+from vendor_auth.middleware import get_current_user
 from config.database import get_vendor_users_collection, supabase
 
 load_dotenv()
@@ -15,11 +14,11 @@ load_dotenv()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-# POST: Handles submitted signup form info (vendor only)
+# POST: Handles submitted signup form info for vendors
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup(
     data: SignupRequest,
-    collection: AsyncCollection = Depends(get_vendor_users_collection)
+    collection = Depends(get_vendor_users_collection)
 ):
     try:
         # Send to Supabase
@@ -60,7 +59,7 @@ async def signup(
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def vendor_login(
     data: LoginRequest,
-    collection: AsyncCollection = Depends(get_vendor_users_collection)
+    collection = Depends(get_vendor_users_collection)
 ):
     try:
         # auth with Supabase
@@ -132,7 +131,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
 async def get_user_profile(
     user_id: str,
     current_user: dict = Depends(get_current_user),
-    collection: AsyncCollection = Depends(get_vendor_users_collection)
+    collection = Depends(get_vendor_users_collection)
 ):
     try:
         user = await collection.find_one(
@@ -166,7 +165,7 @@ async def get_user_profile(
 
 # GET: Returns ALL users. For testing: will remove later / protect route
 @router.get("/users")
-async def get_all_users(collection: AsyncCollection = Depends(get_vendor_users_collection)):
+async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
         users = await collection.find({}, {"_id": 0}).to_list(length=None)
         return {"users": users}

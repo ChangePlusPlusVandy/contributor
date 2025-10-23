@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 from pymongo.server_api import ServerApi
-from pymongo.asynchronous.collection import AsyncCollection
 from supabase import create_client, Client
 
 load_dotenv()
@@ -71,10 +70,14 @@ class MongoDB:
         return cls._get_database(db_name)[col_name]
     
 # methods for getting certain collections
-async def get_resources_collection() -> AsyncCollection:
+async def get_resources_collection():
     """Connect to the "resources" collection in the "the-contributor" database."""
     return MongoDB.get_collection("resources", "the-contributor")
 
-async def get_vendor_users_collection() -> AsyncCollection:
-    """Connect to the "users" collection in the "vendor" database."""
-    return MongoDB.get_collection("users", "vendor")
+async def get_vendor_users_collection():
+    """Connect to the "vendors" collection in the "the-contributor" database."""
+    return MongoDB.get_collection("vendors", "the-contributor")
+
+async def get_admin_collection():
+    """Connect to the "admins" collection in the "the-contributor" database."""
+    return MongoDB.get_collection("admins", "the-contributor")

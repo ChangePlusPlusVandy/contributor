@@ -1,7 +1,6 @@
 import os
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer
-from pymongo.asynchronous.collection import AsyncCollection
 from dotenv import load_dotenv
 from config.database import get_vendor_users_collection, supabase
 
@@ -36,7 +35,7 @@ async def verify_token(credentials = Depends(bearer_scheme)):
 # their verified supabase user from the verify_token method
 async def get_current_user(
     supabase_user = Depends(verify_token),
-    collection: AsyncCollection = Depends(get_vendor_users_collection)
+    collection = Depends(get_vendor_users_collection)
 ):
     try:
         user = await collection.find_one(
