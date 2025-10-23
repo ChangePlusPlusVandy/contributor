@@ -1,22 +1,11 @@
 import os
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer
-from supabase import create_client, Client
-from pymongo import MongoClient
+from pymongo.asynchronous.collection import AsyncCollection
 from dotenv import load_dotenv
+from config.database import get_vendor_users_collection, supabase
 
 load_dotenv()
-
-# Initialize Supabase
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
-
-# Initialize MongoDB
-mongo_uri = os.getenv("MONGODB_URI")
-mongo_client = MongoClient(mongo_uri)
-db = mongo_client.vendor
-users_collection = db.users
 
 # fastapi bearer token scheme
 bearer_scheme = HTTPBearer()
@@ -45,9 +34,12 @@ async def verify_token(credentials = Depends(bearer_scheme)):
 
 # Here for use in protected routes. Returns user's data in MongoDB using
 # their verified supabase user from the verify_token method
-async def get_current_user(supabase_user = Depends(verify_token)):
+async def get_current_user(
+    supabase_user = Depends(verify_token),
+    collection: AsyncCollection = Depends(get_vendor_users_collection)
+):
     try:
-        user = users_collection.find_one(
+        user = await collection.find_one(
             {"supabase_id": supabase_user.id},
             {"_id": 0}  # Not needed & causes issues since its not JSON
         )

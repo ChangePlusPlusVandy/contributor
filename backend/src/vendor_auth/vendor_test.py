@@ -8,8 +8,12 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import app
 
-# Test client
-client = TestClient(app)
+# Test client fixture with lifespan support
+@pytest.fixture(scope="module")
+def client():
+    """Create test client with lifespan context"""
+    with TestClient(app) as test_client:
+        yield test_client
 
 # Test data
 TEST_VENDOR_PASSWORD = "testpass123"
@@ -25,7 +29,7 @@ class TestVendorSignup:
     """
     SUCCESSFUL SIGNUP
     """
-    def test_signup_success(self):
+    def test_signup_success(self, client):
         response = client.post("/auth/signup",
             json={
                 # all fields valid
@@ -43,7 +47,7 @@ class TestVendorSignup:
     """
     UNSUCCESSFUL SIGNUP WITH NO PASSWORD
     """
-    def test_signup_missing_password(self):
+    def test_signup_missing_password(self, client):
         response = client.post("/auth/signup",
             json={
                 "email": unique_email(),
@@ -59,7 +63,7 @@ class TestVendorSignup:
     """
     UNSUCCESSFUL SIGUP WITH NO EMAIL
     """
-    def test_signup_missing_email(self):
+    def test_signup_missing_email(self, client):
         response = client.post(
             "/auth/signup",
             json={
@@ -76,7 +80,7 @@ class TestVendorSignup:
     """
     UNSUCCESSFUL SIGNUP WITH SHORT PASSWORD (<6 chars)
     """
-    def test_signup_short_password(self):
+    def test_signup_short_password(self, client):
         response = client.post("/auth/signup",
             json={
                 "email": unique_email(),
@@ -91,10 +95,10 @@ class TestVendorSignup:
 
 
 class TestVendorLogin:
-    """ 
-    WORKING LOGIN 
     """
-    def test_login_success(self):
+    WORKING LOGIN
+    """
+    def test_login_success(self, client):
         # make user first
         email = unique_email()
         signup_response = client.post("/auth/signup",
@@ -128,7 +132,7 @@ class TestVendorLogin:
     """
     LOGIN WITH WRONG PASSWORD
     """
-    def test_login_wrong_password(self):
+    def test_login_wrong_password(self, client):
         email = unique_email()
         client.post("/auth/signup", json={
             "email": email,
@@ -151,7 +155,7 @@ class TestVendorLogin:
     """
     LOGIN WITH EMAIL THAT ISNT REGISTERED
     """
-    def test_login_nonexistent_email(self):
+    def test_login_nonexistent_email(self, client):
         response = client.post(
             "/auth/login",
             json={
@@ -168,14 +172,14 @@ class TestProtectedRoutes:
     """
     /me ROUTE WITH NO TOKEN
     """
-    def test_get_me_without_token(self):
+    def test_get_me_without_token(self, client):
         response = client.get("/auth/me")
         assert response.status_code == 403
 
     """
     /me ROUTE WITH INVALID TOKEN
     """
-    def test_get_me_invalid_token(self):
+    def test_get_me_invalid_token(self, client):
         response = client.get(
             "/auth/me",
             headers={"Authorization": "Bearer invalid_token"}
@@ -185,7 +189,7 @@ class TestProtectedRoutes:
     """
     /me ROUTE WITH VALID TOKEN
     """
-    def test_get_me_with_valid_token(self):
+    def test_get_me_with_valid_token(self, client):
         # Signup
         email = unique_email()
         signup_response = client.post(
@@ -224,14 +228,14 @@ class TestProtectedRoutes:
     """
     /users/{id} ROUTE WITHOUT TOKEN
     """
-    def test_get_user_by_id_without_token(self):
+    def test_get_user_by_id_without_token(self, client):
         response = client.get("/auth/users/some-id")
         assert response.status_code == 403
 
     """
     /users/{id} ROUTE WITH VALID TOKEN AND VALID USER ID
     """
-    def test_get_user_by_id_success(self):
+    def test_get_user_by_id_success(self, client):
         # Create a user to fetch
         email = unique_email()
         signup_response = client.post("/auth/signup", json={
@@ -267,7 +271,7 @@ class TestProtectedRoutes:
     """
     /users/{id} ROUTE WITH NONEXISTENT USER ID
     """
-    def test_get_user_by_id_not_found(self):
+    def test_get_user_by_id_not_found(self, client):
         """Test /users/{id} returns 404 for non-existent user"""
         # Create and login a user first to get token
         email = unique_email()
@@ -302,7 +306,7 @@ class TestRoleEnforcement:
     """
     CHECKS ASSIGNED ROLE IS VENDOR UPON SIGNUP
     """
-    def test_vendor_role_assigned_on_signup(self):
+    def test_vendor_role_assigned_on_signup(self, client):
         email = unique_email()
         signup_response = client.post(
             "/auth/signup",

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pymongo.asynchronous.collection import AsyncCollection
-from src.schemas.resource import Resource
-from src.controllers.resource_controller import get_all_active, create_resource, set_removed
+from schemas.resource import Resource
+from controllers.resource_controller import get_all_active, create_resource, set_removed
 from config.database import get_resources_collection
 
 router = APIRouter(prefix="/resources", tags=["Resources"])

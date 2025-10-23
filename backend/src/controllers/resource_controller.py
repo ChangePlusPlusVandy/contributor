@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from pymongo.asynchronous.collection import AsyncCollection
 from fastapi import HTTPException
-from src.schemas.resource import Resource
+from schemas.resource import Resource
 from bson import ObjectId
 
 
