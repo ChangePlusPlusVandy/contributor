@@ -6,6 +6,8 @@ from config.database import get_resources_collection
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 
+# test
+
 @router.get("/")
 async def route_get_resources(collection: AsyncCollection = Depends(get_resources_collection)):
     """
