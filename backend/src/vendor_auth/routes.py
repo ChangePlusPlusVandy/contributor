@@ -4,10 +4,15 @@ import certifi
 from fastapi import APIRouter, HTTPException, status, Depends
 from dotenv import load_dotenv
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from schemas.user import SignupRequest, LoginRequest, MongoUser
-from vendor_auth.middleware import get_current_user
-from config.database import get_vendor_users_collection, supabase
+
+# Add the backend directory to sys.path so 'src' module can be found
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from src.schemas.user import SignupRequest, LoginRequest, MongoUser
+from src.vendor_auth.middleware import get_current_user
+from src.config.database import get_vendor_users_collection, supabase
 
 load_dotenv()
 

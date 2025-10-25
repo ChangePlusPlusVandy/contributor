@@ -19,3 +19,4 @@ class MongoUser(BaseModel):
     name: str
     date_of_birth: str  # ISO format so like Year/Month/Day
     role: Literal["vendor", "admin"] #can either be vendor/admin
+

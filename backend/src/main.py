@@ -1,15 +1,20 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the backend directory to sys.path so 'src' module can be found
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from config.database import MongoDB
-from vendor_auth.routes import router
-from utils.util_routes import router as util_routes
-from admin_auth.routes import router as admin_router
-from routes.resource_routes import router as resource_router
+from src.config.database import MongoDB
+
+from src.vendor_auth.vendor_auth_routes import router
+from src.utils.util_routes import router as util_routes
+from src.admin_auth.admin_auth_routes import router as admin_router
+from src.routes.resource_routes import router as resource_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
