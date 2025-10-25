@@ -1,37 +1,28 @@
 # import requests
-import os
-
 from datetime import datetime, timezone
-from fastapi import HTTPException
-from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.asynchronous.collection import AsyncCollection
 from fastapi import HTTPException
 from src.schemas.resource import Resource
 from bson import ObjectId
 
-# loading env for MongoDB key
-load_dotenv()
-mongo_key = os.getenv("MONGODB_URI")
 
-# connect to mongoDB
-try:
-    mongo_client = AsyncIOMotorClient(mongo_key)
-    db = mongo_client["the-contributor"]
-    resources_col = db["resources"]
+async def get_all_active(collection: AsyncCollection):
+    """
+    Retrieve all resources from the database where "removed" is false.
 
-    print("MongoDB connected successfully!")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    raise
+    Args:
+        collection (AsyncCollection): MongoDB collection instance ("resources")
 
-
-# get all resources in the database where "removed" is false
-async def get_all_resources():
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if active resources successfully fetched
+            - 'resources' (list of dicts): a list of Resource documents
+    """
     try:
         resources = []
         
         # query for Resources where the field "removed" is false
-        cursor = resources_col.find({"removed": False})
+        cursor = collection.find({"removed": False})
         
         # add all valid queries into list
         async for document in cursor:
@@ -47,7 +38,20 @@ async def get_all_resources():
     
 
 # create a new resource and add to database
-async def create_resource(resource: Resource):
+async def create_resource(resource: Resource, collection: AsyncCollection):
+    """
+    Create a resource and add it to the database. Before adding, set "removed" to false, add time
+    created, and geolocation information.
+
+    Args:
+        resource (Resource): Pydantic Resource model
+        collection (AsyncCollection): MongoDB collection instance ("resources")
+
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if resource successfully created
+            - 'resource' (dict): Resource dict with added fields (described above)
+    """
     try:
         resource_dict = resource.model_dump()
     
@@ -56,7 +60,7 @@ async def create_resource(resource: Resource):
         resource_dict["created_at"] = datetime.now(timezone.utc)
 
         # insert resource into mongoDB
-        result = await resources_col.insert_one(resource_dict)
+        result = await collection.insert_one(resource_dict)
 
         # return result with id for client use
         resource_dict["_id"] = str(result.inserted_id)
@@ -67,14 +71,27 @@ async def create_resource(resource: Resource):
         raise HTTPException(status_code = 500, detail = "Internal server error.")
     
 
-async def set_removed(resource_id: str):
+async def set_removed(resource_id: str, collection: AsyncCollection):
+    """
+    Set a selected resource's "removed" field to True. The resource remains in the database.
+
+    Args:
+        resource_id (str): MongoDB ObjectId as a string
+        collection (AsyncCollection): MongoDB collection instance ("resources")
+
+    Returns:
+        dict: Contains:
+            - 'success' (bool): True if resource found and updated
+            - 'message' (string): message describing successful removal
+            - 'resource_id' (dict): Id of the resource to be updated
+    """
     try:
-        await resources_col.update_one(
+        await collection.update_one(
             {"_id": ObjectId(resource_id)},
             {"$set": {"removed": True}}
         )
 
-        return {"success": True, "message": "Resource set as removed."}
+        return {"success": True, "message": "Resource set as removed.", "resource_id": resource_id}
     except Exception as e:
         print(f"Error in set_removed controller: {e}")
         raise HTTPException(status_code = 500, detail = "Internal server error.")
