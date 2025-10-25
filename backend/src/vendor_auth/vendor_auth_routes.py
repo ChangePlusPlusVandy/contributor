@@ -6,9 +6,14 @@ from supabase import create_client, Client
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from schemas.user import SignupRequest, LoginRequest, MongoUser
-from vendor_auth.auth_middleware import get_current_user
+
+# Add the backend directory to sys.path so 'src' module can be found
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from src.schemas.user import SignupRequest, LoginRequest, MongoUser
+from src.vendor_auth.auth_middleware import get_current_user
 
 load_dotenv()
 
