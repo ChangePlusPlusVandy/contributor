@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel
 import requests
 from dotenv import load_dotenv
-from config.database import get_admin_collection, supabase
+from src.config.database import get_admin_collection, supabase
 
 load_dotenv()
 

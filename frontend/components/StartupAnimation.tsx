@@ -35,7 +35,7 @@ function AnimatedLetter({ letter, delay }: { letter: string, delay: number }) {
 
 export default function StartupAnimation({ onFinish }: { onFinish?: () => void }) {
 
-    const animationDuration = 100 * "The Contributor".length + 2000;
+    const animationDuration = 100 * "WTTIN".length + 2000;
 
     useEffect(() => {
 
@@ -67,7 +67,7 @@ export default function StartupAnimation({ onFinish }: { onFinish?: () => void }
                     <View
                         className="relative flex flex-row w-fit h-fit"
                     >
-                        {"The Contributor".split("").map((l, key) => (
+                        {"WTTIN".split("").map((l, key) => (
                             <AnimatedLetter letter={l} key={key} delay={100 * key} />
                         ))}
                     </View>
