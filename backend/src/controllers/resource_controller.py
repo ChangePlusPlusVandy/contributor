@@ -1,17 +1,16 @@
 # import requests
 from datetime import datetime, timezone
-from pymongo.asynchronous.collection import AsyncCollection
 from fastapi import HTTPException
-from src.schemas.resource import Resource
+from schemas.resource import Resource
 from bson import ObjectId
 
 
-async def get_all_active(collection: AsyncCollection):
+async def get_all_active(collection):
     """
     Retrieve all resources from the database where "removed" is false.
 
     Args:
-        collection (AsyncCollection): MongoDB collection instance ("resources")
+        collection: MongoDB collection instance ("resources")
 
     Returns:
         dict: Contains:
@@ -38,14 +37,14 @@ async def get_all_active(collection: AsyncCollection):
     
 
 # create a new resource and add to database
-async def create_resource(resource: Resource, collection: AsyncCollection):
+async def create_resource(resource: Resource, collection):
     """
     Create a resource and add it to the database. Before adding, set "removed" to false, add time
     created, and geolocation information.
 
     Args:
         resource (Resource): Pydantic Resource model
-        collection (AsyncCollection): MongoDB collection instance ("resources")
+        collection: MongoDB collection instance ("resources")
 
     Returns:
         dict: Contains:
@@ -71,13 +70,13 @@ async def create_resource(resource: Resource, collection: AsyncCollection):
         raise HTTPException(status_code = 500, detail = "Internal server error.")
     
 
-async def set_removed(resource_id: str, collection: AsyncCollection):
+async def set_removed(resource_id: str, collection):
     """
     Set a selected resource's "removed" field to True. The resource remains in the database.
 
     Args:
         resource_id (str): MongoDB ObjectId as a string
-        collection (AsyncCollection): MongoDB collection instance ("resources")
+        collection: MongoDB collection instance ("resources")
 
     Returns:
         dict: Contains:

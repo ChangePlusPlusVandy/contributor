@@ -1,32 +1,13 @@
 import os
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel
 import requests
-from pymongo import MongoClient
-from supabase import create_client, Client
 from dotenv import load_dotenv
+from config.database import get_admin_collection, supabase
+
 load_dotenv()
 
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-mongo_key = os.getenv("MONGODB_URI")
-
-if not supabase_url or not supabase_key:
-    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY")
-if not mongo_key:
-    raise RuntimeError("Missing MONGODB_URI")
-
-supabase: Client = create_client(supabase_url, supabase_key)
 router = APIRouter(prefix="/admin", tags=["admin_auth"])
-
-# MongoDB client
-mongo_client = MongoClient(mongo_key)
-try:
-    db = mongo_client.get_default_database()
-except Exception:
-    db = mongo_client["the-contributor"]
-
-admins_col = db["admins"]
 
 class RegisterBody(BaseModel):
     name: str | None = None
@@ -68,7 +49,10 @@ def _get_authenticated_user(request: Request):
 
 
 @router.post("/register")
-def admin_register(body: RegisterBody):
+async def admin_register(
+    body: RegisterBody,
+    collection = Depends(get_admin_collection)
+):
     try:
         auth_response = supabase.auth.sign_up({"email": body.email, "password": body.password})
     except Exception as e:
@@ -92,15 +76,18 @@ def admin_register(body: RegisterBody):
         "name": body.name,
         "dob": body.dob,
     }
-    admins_col.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
+    await collection.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
 
     return {"status": "ok", "id": supabase_id}
 
 # login
 @router.post("/login")
-def admin_login(request: Request):
+async def admin_login(
+    request: Request,
+    collection = Depends(get_admin_collection)
+):
     supabase_id, _email = _get_authenticated_user(request)
-    admin = admins_col.find_one({"_id": supabase_id})
+    admin = await collection.find_one({"_id": supabase_id})
     if not admin:
         raise HTTPException(status_code=403, detail="Admin not registered")
     return {"status": "ok", "id": supabase_id}

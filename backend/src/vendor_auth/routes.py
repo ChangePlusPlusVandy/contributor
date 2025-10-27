@@ -2,8 +2,6 @@ import os
 import ssl
 import certifi
 from fastapi import APIRouter, HTTPException, status, Depends
-from supabase import create_client, Client
-from pymongo import MongoClient
 from dotenv import load_dotenv
 import sys
 
@@ -13,27 +11,20 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from src.schemas.user import SignupRequest, LoginRequest, MongoUser
-from src.vendor_auth.auth_middleware import get_current_user
+from src.vendor_auth.middleware import get_current_user
+from src.config.database import get_vendor_users_collection, supabase
 
 load_dotenv()
-
-# Supabase init
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
-
-# MongoDB init
-mongo_uri = os.getenv("MONGODB_URI")
-mongo_client = MongoClient(mongo_uri)
-db = mongo_client.vendor
-users_collection = db.users
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-# POST: Handles submitted signup form info (vendor only)
+# POST: Handles submitted signup form info for vendors
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-async def signup(data: SignupRequest):
+async def signup(
+    data: SignupRequest,
+    collection = Depends(get_vendor_users_collection)
+):
     try:
         # Send to Supabase
         auth_response = supabase.auth.sign_up({
@@ -58,7 +49,7 @@ async def signup(data: SignupRequest):
             "role": "vendor"
         }
 
-        result = users_collection.insert_one(mongo_create_vendor)
+        result = await collection.insert_one(mongo_create_vendor)
 
         return {"supabase_id": supabase_id}
 
@@ -71,7 +62,10 @@ async def signup(data: SignupRequest):
 
 # POST: Handles vendor login ONLY - admins use separate route
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def vendor_login(data: LoginRequest):
+async def vendor_login(
+    data: LoginRequest,
+    collection = Depends(get_vendor_users_collection)
+):
     try:
         # auth with Supabase
         auth_response = supabase.auth.sign_in_with_password({
@@ -86,7 +80,7 @@ async def vendor_login(data: LoginRequest):
             )
 
         # Checks if person logging in is a vendor
-        user = users_collection.find_one(
+        user = await collection.find_one(
             {"supabase_id": auth_response.user.id},
             {"_id": 0}
         )
@@ -139,9 +133,13 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
 
 # PROTECTED GET: Get a specific user via supabase id
 @router.get("/users/{user_id}", status_code=status.HTTP_200_OK)
-async def get_user_profile(user_id: str, current_user: dict = Depends(get_current_user)):
+async def get_user_profile(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    collection = Depends(get_vendor_users_collection)
+):
     try:
-        user = users_collection.find_one(
+        user = await collection.find_one(
             {"supabase_id": user_id},
             {"_id": 0}
         )
@@ -172,9 +170,9 @@ async def get_user_profile(user_id: str, current_user: dict = Depends(get_curren
 
 # GET: Returns ALL users. For testing: will remove later / protect route
 @router.get("/users")
-async def get_all_users():
+async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
-        users = list(users_collection.find({}, {"_id": 0}))
+        users = await collection.find({}, {"_id": 0}).to_list(length=None)
         return {"users": users}
     except Exception as e:
         raise HTTPException(
