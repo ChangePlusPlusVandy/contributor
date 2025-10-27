@@ -2,7 +2,7 @@ import os
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer
 from dotenv import load_dotenv
-from config.database import get_vendor_users_collection, supabase
+from src.config.database import get_vendor_users_collection, supabase
 
 load_dotenv()
 

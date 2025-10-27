@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from schemas.resource import Resource
 from controllers.resource_controller import get_all_active, create_resource, set_removed
-from config.database import get_resources_collection
+from src.config.database import get_resources_collection
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 
