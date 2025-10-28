@@ -55,11 +55,7 @@ async def signup(
             "role": "vendor"
         }
 
-<<<<<<< HEAD:backend/src/vendor_auth/vendor_auth_routes.py
-        users_collection.insert_one(vendor_data)
-=======
         result = await collection.insert_one(mongo_create_vendor)
->>>>>>> origin:backend/src/vendor_auth/routes.py
 
         logger.info(f"Vendor registered successfully: {data.email}")
         return {"supabase_id": supabase_id}
@@ -94,13 +90,8 @@ async def vendor_login(
                 detail="Invalid email or password"
             )
 
-<<<<<<< HEAD:backend/src/vendor_auth/vendor_auth_routes.py
-        # Check if the user exists in MongoDB
-        user = users_collection.find_one(
-=======
         # Checks if person logging in is a vendor
         user = await collection.find_one(
->>>>>>> origin:backend/src/vendor_auth/routes.py
             {"supabase_id": auth_response.user.id},
             {"_id": 0}
         )
@@ -210,12 +201,7 @@ async def get_user_profile(
 @router.get("/users")
 async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
-<<<<<<< HEAD:backend/src/vendor_auth/vendor_auth_routes.py
-        users = list(users_collection.find({}, {"_id": 0}))
-        logger.info(f"Fetched {len(users)} total users.")
-=======
         users = await collection.find({}, {"_id": 0}).to_list(length=None)
->>>>>>> origin:backend/src/vendor_auth/routes.py
         return {"users": users}
     except Exception as e:
         logger.error(f"Error fetching all users: {e}", exc_info=True)
