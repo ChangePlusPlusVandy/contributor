@@ -1,18 +1,17 @@
 from fastapi import APIRouter, Depends
-from pymongo.asynchronous.collection import AsyncCollection
-from src.schemas.resource import Resource
-from src.controllers.resource_controller import get_all_active, create_resource, set_removed
-from config.database import get_resources_collection
+from schemas.resource import Resource
+from controllers.resource_controller import get_all_active, create_resource, set_removed
+from src.config.database import get_resources_collection
 from src.config.logger import get_logger
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
 
 @router.get("/")
-async def route_get_resources(collection: AsyncCollection = Depends(get_resources_collection)):
+async def route_get_resources(collection = Depends(get_resources_collection)):
     """
-    Retrieve all active resources. 
-    
+    Retrieve all active resources.
+
     Returns all resources where "removed" is False.
     """
     logger.info("Fetching all active resources...")
@@ -26,12 +25,12 @@ async def route_get_resources(collection: AsyncCollection = Depends(get_resource
 
 @router.post("/")
 async def route_create_resource(
-    resource: Resource, 
-    collection: AsyncCollection = Depends(get_resources_collection)
+    resource: Resource,
+    collection = Depends(get_resources_collection)
 ):
     """
     Create a new resource and add it to database.
-    
+
     Returns the dict for the resource.
     """
     logger.info(f"Attempting to create new resource with name='{resource.name}'")
@@ -45,8 +44,8 @@ async def route_create_resource(
 
 @router.patch("/{resource_id}")
 async def route_set_removed(
-    resource_id: str, 
-    collection: AsyncCollection = Depends(get_resources_collection)
+    resource_id: str,
+    collection = Depends(get_resources_collection)
 ):
     """
     Set a given resource's field "removed" to True.

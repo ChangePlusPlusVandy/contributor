@@ -12,9 +12,9 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.config.database import MongoDB
 
-from src.vendor_auth.vendor_auth_routes import router
+from src.vendor_auth.routes import router
 from src.utils.util_routes import router as util_routes
-from src.admin_auth.admin_auth_routes import router as admin_router
+from src.admin_auth.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
 
 logger = get_logger(__name__)
