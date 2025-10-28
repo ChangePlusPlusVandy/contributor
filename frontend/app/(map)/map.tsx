@@ -11,7 +11,7 @@ export default function Map() {
 
     useEffect(() => {
 
-        makeRequest("resources", {
+        makeRequest("resources/", {
             method: "GET"
         }).then((result) => {
             setMapData(result.resources);
@@ -23,7 +23,9 @@ export default function Map() {
         <PageLayout title="Map">
             {
                 mapData === undefined ? (
-                    <ActivityIndicator size="large" color="black"/>
+                    <View className="h-full w-full flex justify-center items-center">
+                        <ActivityIndicator size="large" color="black"/>
+                    </View>
                 ) :
                 (
                     <MapComponent mapData={mapData}/>
