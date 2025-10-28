@@ -202,6 +202,7 @@ async def get_user_profile(
 async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
         users = await collection.find({}, {"_id": 0}).to_list(length=None)
+        logger.info(f"Fetched {len(users)} total users.")
         return {"users": users}
     except Exception as e:
         logger.error(f"Error fetching all users: {e}", exc_info=True)

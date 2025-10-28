@@ -76,8 +76,14 @@ async def admin_register(
             logger.warning(f"Unauthorized email domain during registration: {email}")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized email domain")
 
-        admin_data = {"_id": supabase_id, "email": email, "name": body.name, "dob": body.dob}
-        admins_col.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
+        # insert admin data to MongoDB
+        admin_data = {
+            "_id": supabase_id,
+            "email": email,
+            "name": body.name,
+            "dob": body.dob,
+        }
+        await collection.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
 
         logger.info(f"Admin registered successfully: {email}")
         return {"status": "ok", "id": supabase_id}
@@ -88,27 +94,6 @@ async def admin_register(
         logger.error(f"Error during admin registration: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
-    user = getattr(auth_response, "user", None)
-    if not user:
-        raise HTTPException(status_code=400, detail="Supabase creation failure")
-
-    supabase_id = user.id
-    email = (user.email or "").lower()
-
-    # check email domain
-    if os.getenv("ALLOW_ANY_EMAIL") != "1" and not email.endswith("@thecontributor.org"):
-        raise HTTPException(status_code=403, detail="Unauthorized email domain")
-
-    # insert admin data to MongoDB
-    admin_data = {
-        "_id": supabase_id,
-        "email": email,
-        "name": body.name,
-        "dob": body.dob,
-    }
-    await collection.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
-
-    return {"status": "ok", "id": supabase_id}
 
 # login
 @router.post("/login")
@@ -119,5 +104,14 @@ async def admin_login(
     supabase_id, _email = _get_authenticated_user(request)
     admin = await collection.find_one({"_id": supabase_id})
     if not admin:
+        logger.warning(f"Admin login failed — no record found for ID: {supabase_id}")
         raise HTTPException(status_code=403, detail="Admin not registered")
+
+    logger.info(f"Admin login successful for ID: {supabase_id}")
     return {"status": "ok", "id": supabase_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during admin login: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
