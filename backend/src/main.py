@@ -1,5 +1,6 @@
 import sys
 import os
+from src.config.logger import get_logger
 
 # Add the backend directory to sys.path so 'src' module can be found
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -15,6 +16,8 @@ from src.vendor_auth.routes import router
 from src.utils.util_routes import router as util_routes
 from src.admin_auth.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
+
+logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

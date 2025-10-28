@@ -4,6 +4,10 @@ import certifi
 from fastapi import APIRouter, HTTPException, status, Depends
 from dotenv import load_dotenv
 import sys
+from src.config.supabase import supabase
+from src.config.database import users_collection
+from src.models.vendor_auth import SignupRequest, LoginRequest
+from src.config.logger import get_logger
 
 # Add the backend directory to sys.path so 'src' module can be found
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,6 +21,7 @@ from src.config.database import get_vendor_users_collection, supabase
 load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+logger = get_logger(__name__)
 
 
 # POST: Handles submitted signup form info for vendors
@@ -26,13 +31,14 @@ async def signup(
     collection = Depends(get_vendor_users_collection)
 ):
     try:
-        # Send to Supabase
+        # Sign up with Supabase
         auth_response = supabase.auth.sign_up({
             "email": data.email,
             "password": data.password
         })
 
         if not auth_response.user:
+            logger.error("Supabase returned no user object during vendor signup.")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Supabase creation failure"
@@ -40,8 +46,8 @@ async def signup(
 
         supabase_id = auth_response.user.id
 
-        # Create in Mongo
-        mongo_create_vendor = {
+        # Store vendor info in MongoDB
+        vendor_data = {
             "supabase_id": supabase_id,
             "email": data.email,
             "name": data.name,
@@ -51,12 +57,16 @@ async def signup(
 
         result = await collection.insert_one(mongo_create_vendor)
 
+        logger.info(f"Vendor registered successfully: {data.email}")
         return {"supabase_id": supabase_id}
 
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error during vendor signup: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during signup: {str(e)}"
+            detail="Internal server error"
         )
     
 
@@ -67,13 +77,14 @@ async def vendor_login(
     collection = Depends(get_vendor_users_collection)
 ):
     try:
-        # auth with Supabase
+        # Authenticate via Supabase
         auth_response = supabase.auth.sign_in_with_password({
             "email": data.email,
             "password": data.password
         })
 
         if not auth_response.user or not auth_response.session:
+            logger.warning(f"Vendor login failed — invalid credentials: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
@@ -86,18 +97,21 @@ async def vendor_login(
         )
 
         if not user:
+            logger.warning(f"Vendor login failed — user not found in DB: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found in database"
             )
 
         if user.get("role") != "vendor":
+            logger.warning(f"Unauthorized role login attempt by: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This login is for vendors only. Admins use a different portal."
             )
 
-        # Return tokens
+        logger.info(f"Vendor login successful: {data.email}")
+
         return {
             "access_token": auth_response.session.access_token,
             "refresh_token": auth_response.session.refresh_token,
@@ -111,24 +125,35 @@ async def vendor_login(
     except HTTPException:
         raise
     except Exception as e:
-        # Check if it's an auth error
-        if "Invalid login credentials" in str(e) or "Invalid" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
-            )
+        logger.error(f"Unexpected error during vendor login: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during login: {str(e)}"
+            detail="Internal server error"
         )
 
 
 # PROTECTED GET: Returns current logged-in user info. JWT Protected.
 @router.get("/me", status_code=status.HTTP_200_OK)
 async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
-    return {
-        "user": current_user
-    }
+    try:
+        if not current_user:
+            logger.warning("Attempt to access /me with missing current_user context.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing user session"
+            )
+
+        logger.info(f"Profile fetched for vendor: {current_user.get('email')}")
+        return {"user": current_user}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching current vendor profile: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 # PROTECTED GET: Get a specific user via supabase id
@@ -145,10 +170,13 @@ async def get_user_profile(
         )
 
         if not user:
+            logger.warning(f"User not found with ID: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+
+        logger.info(f"Fetched user profile for ID: {user_id}")
 
         return {
             "user": {
@@ -162,9 +190,10 @@ async def get_user_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error fetching user profile for {user_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching user: {str(e)}"
+            detail="Internal server error"
         )
 
 
@@ -173,9 +202,11 @@ async def get_user_profile(
 async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
         users = await collection.find({}, {"_id": 0}).to_list(length=None)
+        logger.info(f"Fetched {len(users)} total users.")
         return {"users": users}
     except Exception as e:
+        logger.error(f"Error fetching all users: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching users: {str(e)}"
+            detail="Internal server error"
         )
