@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 from schemas.resource import Resource
 from bson import ObjectId
+from typing import List
 
 
 async def get_all_active(collection):
@@ -33,7 +34,7 @@ async def get_all_active(collection):
         return {"success": True, "resources": resources}
     except Exception as e:
         print(f"Error in get_all_resources controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
     
 
 # create a new resource and add to database
@@ -67,7 +68,7 @@ async def create_resource(resource: Resource, collection):
         return {"success": True, "resource": resource_dict}
     except Exception as e:
         print(f"Error in create_resource controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
     
 
 async def set_removed(resource_id: str, collection):
@@ -93,4 +94,36 @@ async def set_removed(resource_id: str, collection):
         return {"success": True, "message": "Resource set as removed.", "resource_id": resource_id}
     except Exception as e:
         print(f"Error in set_removed controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+    
+
+async def seed_db(resources: List, collection):
+    """
+    Seed MongoDB database with Google Sheet info, keeping in mind duplicates, 
+    old resources, etc.
+
+    Returns a list of dicts, where each dict is a resource and status that indicates whether
+    the resource was updated or newly inserted into MongoDB.
+    """
+
+    try:
+        # output list 
+        results = []
+
+        # given: resources
+        for resource in resources:
+            result = await collection.update_one(
+                {"org_name": resource["org_name"]},
+                {"$set": resource},
+                upsert = True
+            )
+
+            if result.matched_count > 0:
+                results.append({"org_name": resource["org_name"], "status": "updated"})
+            else:
+                results.append({"org_name": resource["org_name"], "status": "inserted"})
+
+        return {"success": True, "results": results}
+    except Exception as e:
+        print(f"Error in seed_db_from_sheets controller: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")

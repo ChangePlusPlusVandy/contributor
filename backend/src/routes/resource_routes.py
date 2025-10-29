@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from schemas.resource import Resource
-from controllers.resource_controller import get_all_active, create_resource, set_removed
+from controllers.resource_controller import get_all_active, create_resource, set_removed, seed_db
 from src.config.database import get_resources_collection
 from src.config.logger import get_logger
+from typing import List
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
@@ -62,3 +63,28 @@ async def route_set_removed(
     except Exception as e:
         logger.error(f"Error removing resource_id={resource_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to mark resource as removed")
+    
+@router.post("/seed")
+async def route_seed_db(
+    resources: List,
+    collection = Depends(get_resources_collection)
+):
+    """
+    Seed MongoDB database with Google Sheets resource info. 
+
+    Returns a list of dicts that indicate the status of adding/updating each resource.
+    """
+    logger.info(f"Seeding {len(resources)} resources from Google Sheets into MongoDB")
+    try:
+        result = await seed_db(resources, collection)
+
+        # updated vs inserted for logging
+        updated_count = sum(1 for r in result['results'] if r['status'] == 'updated')
+        inserted_count = sum(1 for r in result['results'] if r['status'] == 'inserted')
+        
+        logger.info(f"Successfully seeded database: {updated_count} updated, {inserted_count} inserted")
+        return result
+    except Exception as e:
+        logger.error(f"Error seeding database: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to seed database from sheets")
+
