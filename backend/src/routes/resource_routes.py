@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from schemas.resource import Resource
-from controllers.resource_controller import get_all_active, create_resource, set_removed, seed_db
+from controllers.resource_controller import (
+    get_all_active, 
+    create_resource, 
+    set_removed, 
+    seed_db
+)
 from src.config.database import get_resources_collection
 from src.config.logger import get_logger
 from typing import List
