@@ -17,7 +17,7 @@ export const useApi = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.detail || "An error occured.");
+                throw new Error(errorData?.detail || "An error occurred.");
             }
 
             return response.json();
@@ -25,12 +25,20 @@ export const useApi = () => {
         }
         catch (error: unknown) {
 
-            if (error instanceof Error)
+            console.error(`An error occurred when requesting ${apiURL}${endpoint}.`)
+            if (error instanceof Error) {
                 console.error(error.message || "An error occurred.");
-            else if (typeof error == "string")
+                return { "error": error.message || "An error occurred." }
+            }
+            else if (typeof error == "string") {
                 console.error(error);
-            else
+                return { "error": error }
+            }
+            else {
                 console.error("An unkown error occurred.");
+                return { "error": "An unkown error occurred." }
+            }
+
 
         }
 
