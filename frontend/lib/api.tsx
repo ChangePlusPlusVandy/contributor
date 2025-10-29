@@ -9,16 +9,31 @@ export const useApi = () => {
 
     const makeRequest = async (endpoint: string, options = {}, apiURL: string = API_URL) => {
 
-        const response = await fetch(`${apiURL}${endpoint}`, {
-            ...options
-        });
+        try {
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(errorData?.detail || "An error occured.");
+            const response = await fetch(`${apiURL}${endpoint}`, {
+                ...options
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || "An error occured.");
+            }
+
+            return response.json();
+
+        }
+        catch (error: unknown) {
+
+            if (error instanceof Error)
+                console.error(error.message || "An error occurred.");
+            else if (typeof error == "string")
+                console.error(error);
+            else
+                console.error("An unkown error occurred.");
+
         }
 
-        return response.json();
     }
 
     return { makeRequest };

@@ -25,7 +25,7 @@ function AnimatedLetter({ letter, delay }: { letter: string, delay: number }) {
 
     return (
         <Animated.Text
-            style={[animatedStyle, { fontFamily: "Parisienne_400Regular", lineHeight: 50 }]}
+            style={[animatedStyle, { fontFamily: "Parisienne_400Regular", lineHeight: 60 }]}
             className="text-5xl px-[3px]"
         >
             {letter}

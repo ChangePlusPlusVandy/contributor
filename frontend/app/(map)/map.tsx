@@ -24,7 +24,7 @@ export default function Map() {
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
-                        <ActivityIndicator size="large" color="black"/>
+                        <ActivityIndicator size="large" color="black" className="relative -translate-y-10"/>
                     </View>
                 ) :
                 (
