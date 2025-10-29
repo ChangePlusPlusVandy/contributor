@@ -3,10 +3,18 @@ import os
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 from pymongo.server_api import ServerApi
-from pymongo.asynchronous.collection import AsyncCollection
+from supabase import create_client, Client
 
 load_dotenv()
 mongo_key = os.getenv("MONGODB_URI")
+
+# Supabase initialization
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+if not supabase_url or not supabase_key:
+    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY")
+
+supabase: Client = create_client(supabase_url, supabase_key)
 
 class MongoDB:
     # client variable 
@@ -62,6 +70,14 @@ class MongoDB:
         return cls._get_database(db_name)[col_name]
     
 # methods for getting certain collections
-async def get_resources_collection() -> AsyncCollection:
+async def get_resources_collection():
     """Connect to the "resources" collection in the "the-contributor" database."""
     return MongoDB.get_collection("resources", "the-contributor")
+
+async def get_vendor_users_collection():
+    """Connect to the "vendors" collection in the "the-contributor" database."""
+    return MongoDB.get_collection("vendors", "the-contributor")
+
+async def get_admin_collection():
+    """Connect to the "admins" collection in the "the-contributor" database."""
+    return MongoDB.get_collection("admins", "the-contributor")
