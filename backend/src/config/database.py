@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from pymongo import AsyncMongoClient
+from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from supabase import create_client, Client
 
@@ -18,31 +18,32 @@ supabase: Client = create_client(supabase_url, supabase_key)
 
 class MongoDB:
     # client variable 
-    client: AsyncMongoClient | None = None
+    client: MongoClient | None = None
 
     # MongoDB class methods
     @classmethod
-    async def connect_db(cls):
+    def connect_db(cls):
         """Connect to MongoDB database and initialize "client" variable."""
         try:
-            cls.client = AsyncMongoClient(mongo_key, server_api = ServerApi('1'))
+            cls.client = MongoClient(mongo_key, server_api = ServerApi('1'))
             
-            # await cls.client.admin.command('ping')
+            # Test connection
+            cls.client.admin.command('ping')
             print("MongoDB connected successfully!")
         except Exception as e:
             print(f"Error connecting to MongoDB: {e}")
             raise
     
     @classmethod
-    async def close_db(cls):
+    def close_db(cls):
         """Close MongoDB connection."""
         if cls.client:
-            await cls.client.close()
+            cls.client.close()
             cls.client = None
             print("MongoDB connection closed.")
 
     @classmethod
-    def get_client(cls) -> AsyncMongoClient:
+    def get_client(cls) -> MongoClient:
         """Returns the client connected to MongoDB."""
         if cls.client is None:
             raise Exception("MongoDB not connected.")
@@ -70,14 +71,14 @@ class MongoDB:
         return cls._get_database(db_name)[col_name]
     
 # methods for getting certain collections
-async def get_resources_collection():
-    """Connect to the "resources" collection in the "the-contributor" database."""
+def get_resources_collection():
+    """Get the "resources" collection in the "the-contributor" database."""
     return MongoDB.get_collection("resources", "the-contributor")
 
-async def get_vendor_users_collection():
-    """Connect to the "vendors" collection in the "the-contributor" database."""
+def get_vendor_users_collection():
+    """Get the "vendors" collection in the "the-contributor" database."""
     return MongoDB.get_collection("vendors", "the-contributor")
 
-async def get_admin_collection():
-    """Connect to the "admins" collection in the "the-contributor" database."""
+def get_admin_collection():
+    """Get the "admins" collection in the "the-contributor" database."""
     return MongoDB.get_collection("admins", "the-contributor")

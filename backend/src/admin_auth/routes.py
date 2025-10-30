@@ -57,11 +57,9 @@ def _get_authenticated_user(request: Request):
 
 
 @router.post("/register")
-async def admin_register(
-    body: RegisterBody,
-    collection = Depends(get_admin_collection)
-):
+async def admin_register(body: RegisterBody):
     try:
+        collection = get_admin_collection()
         auth_response = supabase.auth.sign_up({"email": body.email, "password": body.password})
         user = getattr(auth_response, "user", None)
         if not user:
@@ -83,7 +81,7 @@ async def admin_register(
             "name": body.name,
             "dob": body.dob,
         }
-        await collection.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
+        collection.update_one({"_id": supabase_id}, {"$set": admin_data}, upsert=True)
 
         logger.info(f"Admin registered successfully: {email}")
         return {"status": "ok", "id": supabase_id}
@@ -97,18 +95,17 @@ async def admin_register(
 
 # login
 @router.post("/login")
-async def admin_login(
-    request: Request,
-    collection = Depends(get_admin_collection)
-):
-    supabase_id, _email = _get_authenticated_user(request)
-    admin = await collection.find_one({"_id": supabase_id})
-    if not admin:
-        logger.warning(f"Admin login failed — no record found for ID: {supabase_id}")
-        raise HTTPException(status_code=403, detail="Admin not registered")
+async def admin_login(request: Request):
+    try:
+        collection = get_admin_collection()
+        supabase_id, _email = _get_authenticated_user(request)
+        admin = collection.find_one({"_id": supabase_id})
+        if not admin:
+            logger.warning(f"Admin login failed — no record found for ID: {supabase_id}")
+            raise HTTPException(status_code=403, detail="Admin not registered")
 
-    logger.info(f"Admin login successful for ID: {supabase_id}")
-    return {"status": "ok", "id": supabase_id}
+        logger.info(f"Admin login successful for ID: {supabase_id}")
+        return {"status": "ok", "id": supabase_id}
 
     except HTTPException:
         raise
