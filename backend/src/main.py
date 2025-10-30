@@ -21,14 +21,14 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # connect to MongoDB, initialize client
-    await MongoDB.connect_db()
+    # connect to MongoDB, initialize client (synchronous call)
+    MongoDB.connect_db()
 
     # stop here until server shuts down
     yield
 
-    # close connection, set client to null
-    await MongoDB.close_db()
+    # close connection, set client to null (synchronous call)
+    MongoDB.close_db()
 
 app = FastAPI(lifespan = lifespan)
 

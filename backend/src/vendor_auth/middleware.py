@@ -33,12 +33,10 @@ async def verify_token(credentials = Depends(bearer_scheme)):
 
 # Here for use in protected routes. Returns user's data in MongoDB using
 # their verified supabase user from the verify_token method
-async def get_current_user(
-    supabase_user = Depends(verify_token),
-    collection = Depends(get_vendor_users_collection)
-):
+async def get_current_user(supabase_user = Depends(verify_token)):
     try:
-        user = await collection.find_one(
+        collection = get_vendor_users_collection()
+        user = collection.find_one(
             {"supabase_id": supabase_user.id},
             {"_id": 0}  # Not needed & causes issues since its not JSON
         )

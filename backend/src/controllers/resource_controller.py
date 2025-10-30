@@ -1,9 +1,17 @@
 # import requests
+import os
+import sys
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from schemas.resource import Resource
 from bson import ObjectId
 from typing import List
+
+# Add the backend directory to sys.path so 'src' module can be found
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from src.schemas.resource import Resource
 
 
 async def get_all_active(collection):
@@ -25,7 +33,7 @@ async def get_all_active(collection):
         cursor = collection.find({"removed": False})
         
         # add all valid queries into list
-        async for document in cursor:
+        for document in cursor:
             # convert ObjectId to json
             document["_id"] = str(document["_id"])
             resources.append(document)
@@ -60,7 +68,7 @@ async def create_resource(resource: Resource, collection):
         resource_dict["created_at"] = datetime.now(timezone.utc)
 
         # insert resource into mongoDB
-        result = await collection.insert_one(resource_dict)
+        result = collection.insert_one(resource_dict)
 
         # return result with id for client use
         resource_dict["_id"] = str(result.inserted_id)
@@ -86,7 +94,7 @@ async def set_removed(resource_id: str, collection):
             - 'resource_id' (dict): Id of the resource to be updated
     """
     try:
-        await collection.update_one(
+        collection.update_one(
             {"_id": ObjectId(resource_id)},
             {"$set": {"removed": True}}
         )
