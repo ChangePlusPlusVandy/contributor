@@ -1,16 +1,15 @@
 import sys
 import os
-from src.config.logger import get_logger
 
 # Add the backend directory to sys.path so 'src' module can be found
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.config.database import MongoDB
+from src.config.logger import get_logger
 
 from src.vendor_auth.routes import router
 from src.utils.util_routes import router as util_routes
