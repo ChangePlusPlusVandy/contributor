@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 import pandas as pd
-import requests
 from io import StringIO
 from datetime import datetime
 import httpx
 import asyncio
+import json
 from src.config.logger import get_logger
 
 router = APIRouter()
@@ -25,7 +25,7 @@ async def sync_resources():
     logger.info("Starting resource sync from Google Sheet...")
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             logger.debug(f"Fetching CSV from {SHEET_URL}")
             response = await client.get(SHEET_URL)
             response.raise_for_status()
@@ -36,7 +36,10 @@ async def sync_resources():
         df = await loop.run_in_executor(None, pd.read_csv, StringIO(response.text))
         logger.debug(f"Parsed CSV with {len(df)} rows")
 
-        resources = df.to_dict(orient="records")
+        # Convert to JSON string and back to handle NaN values properly
+        # pandas to_json converts NaN to null automatically
+        resources_json = df.to_json(orient="records")
+        resources = json.loads(resources_json)
 
         logger.info(f"Successfully synced {len(resources)} resources.")
         return {
