@@ -1,7 +1,6 @@
 import os
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, HTTPException, status
 from pydantic import BaseModel
-import requests
 from dotenv import load_dotenv
 from src.config.database import get_admin_collection, supabase
 from src.config.logger import get_logger
@@ -27,7 +26,7 @@ def get_supabase_user(access_token: str):
             logger.warning("Supabase user retrieval failed: No user object returned")
             return None
         return {"id": user.id, "email": user.email}
-    except Exception:
+    except Exception as e:
         logger.error(f"Error retrieving Supabase user: {e}", exc_info=True)
         return None
 
