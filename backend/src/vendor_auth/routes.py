@@ -1,6 +1,4 @@
 import os
-import ssl
-import certifi
 from fastapi import APIRouter, HTTPException, status, Depends
 from dotenv import load_dotenv
 import sys
@@ -10,7 +8,7 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from src.schemas.user import SignupRequest, LoginRequest, MongoUser
+from src.schemas.user import SignupRequest, LoginRequest
 from src.vendor_auth.middleware import get_current_user
 from src.config.database import get_vendor_users_collection, supabase
 
