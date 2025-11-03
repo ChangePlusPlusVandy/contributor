@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends
 from src.schemas.resource import Resource
 from src.controllers.resource_controller import get_all_active, create_resource, set_removed
 from src.config.database import get_resources_collection
+from src.config.logger import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 

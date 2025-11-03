@@ -11,8 +11,11 @@ if backend_dir not in sys.path:
 from src.schemas.user import SignupRequest, LoginRequest
 from src.vendor_auth.middleware import get_current_user
 from src.config.database import get_vendor_users_collection, supabase
+from src.config.logger import get_logger
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -31,6 +34,7 @@ async def signup(
         })
 
         if not auth_response.user:
+            logger.error("Supabase returned no user object during vendor signup.")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Supabase creation failure"
@@ -48,10 +52,11 @@ async def signup(
         }
 
         result = await collection.insert_one(mongo_create_vendor)
-
+        logger.info(f"Vendor registered successfully: {data.email}")
         return {"supabase_id": supabase_id}
 
     except Exception as e:
+        logger.error(f"Error during vendor signup: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during signup: {str(e)}"
@@ -72,6 +77,7 @@ async def vendor_login(
         })
 
         if not auth_response.user or not auth_response.session:
+            logger.warning(f"Vendor login failed — invalid credentials: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
@@ -84,16 +90,20 @@ async def vendor_login(
         )
 
         if not user:
+            logger.warning(f"Vendor login failed — user not found in DB: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found in database"
             )
 
         if user.get("role") != "vendor":
+            logger.warning(f"Unauthorized role login attempt by: {data.email}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This login is for vendors only. Admins use a different portal."
             )
+        
+        logger.info(f"Vendor login successful: {data.email}")
 
         # Return tokens
         return {
@@ -111,10 +121,12 @@ async def vendor_login(
     except Exception as e:
         # Check if it's an auth error
         if "Invalid login credentials" in str(e) or "Invalid" in str(e):
+            logger.error(f"Invalid email or Password {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
+        logger.error(f"Unexpected error during vendor login: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during login: {str(e)}"
@@ -143,10 +155,13 @@ async def get_user_profile(
         )
 
         if not user:
+            logger.warning(f"User not found with ID: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        
+        logger.info(f"Fetched user profile for ID: {user_id}")
 
         return {
             "user": {
@@ -160,6 +175,7 @@ async def get_user_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error fetching user profile for {user_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching user: {str(e)}"
@@ -171,8 +187,10 @@ async def get_user_profile(
 async def get_all_users(collection = Depends(get_vendor_users_collection)):
     try:
         users = await collection.find({}, {"_id": 0}).to_list(length=None)
+        logger.info(f"Fetched {len(users)} total users.")
         return {"users": users}
     except Exception as e:
+        logger.error(f"Error fetching all users: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching users: {str(e)}"
