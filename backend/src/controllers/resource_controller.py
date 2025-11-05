@@ -1,7 +1,6 @@
 # import requests
 import os
 import sys
-from datetime import datetime, timezone
 from fastapi import HTTPException
 from bson import ObjectId
 from typing import List
@@ -12,6 +11,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from src.schemas.resource import Resource
+from src.utils.utils import prepare_default_fields
 
 
 async def get_all_active(collection):
@@ -33,7 +33,7 @@ async def get_all_active(collection):
         cursor = collection.find({"removed": False})
         
         # add all valid queries into list
-        for document in cursor:
+        async for document in cursor:
             # convert ObjectId to json
             document["_id"] = str(document["_id"])
             resources.append(document)
@@ -64,11 +64,10 @@ async def create_resource(resource: Resource, collection):
         resource_dict = resource.model_dump()
     
         # add necessary fields
-        resource_dict["removed"] = False
-        resource_dict["created_at"] = datetime.now(timezone.utc)
+        resource_dict.update(prepare_default_fields())
 
         # insert resource into mongoDB
-        result = collection.insert_one(resource_dict)
+        result = await collection.insert_one(resource_dict)
 
         # return result with id for client use
         resource_dict["_id"] = str(result.inserted_id)
@@ -94,7 +93,7 @@ async def set_removed(resource_id: str, collection):
             - 'resource_id' (dict): Id of the resource to be updated
     """
     try:
-        collection.update_one(
+        await collection.update_one(
             {"_id": ObjectId(resource_id)},
             {"$set": {"removed": True}}
         )
@@ -105,7 +104,7 @@ async def set_removed(resource_id: str, collection):
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
-async def seed_db(resources: List, collection):
+async def seed_db(resources: List[dict], collection):
     """
     Seed MongoDB database with Google Sheet info, keeping in mind duplicates, 
     old resources, etc.
@@ -122,7 +121,10 @@ async def seed_db(resources: List, collection):
         for resource in resources:
             result = await collection.update_one(
                 {"org_name": resource["org_name"]},
-                {"$set": resource},
+                {
+                    "$set": resource,
+                    "$setOnInsert": prepare_default_fields()
+                 },
                 upsert = True
             )
 

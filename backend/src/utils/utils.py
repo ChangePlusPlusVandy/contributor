@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from opencage.geocoder import OpenCageGeocode
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -15,3 +16,9 @@ def _geocode_address(address: str):
     else:
         return None
 
+def prepare_default_fields() -> dict:
+    """Returns default fields for new resources."""
+    return {
+        "removed": False,
+        "created_at": datetime.now(timezone.utc)
+    }
