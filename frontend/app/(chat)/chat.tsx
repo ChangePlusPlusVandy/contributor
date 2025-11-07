@@ -1,9 +1,10 @@
-import PageLayout from "@/components/PageLayout";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 export default function Chat() {
     return (
-        <PageLayout title="Chat">
+        <SafeAreaView>
 
-        </PageLayout>
+        </SafeAreaView>
     );
 }

@@ -1,8 +1,8 @@
 import { ActivityIndicator, View, StyleSheet } from "react-native";
-import PageLayout from "@/components/PageLayout";
 import { useApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import MapComponent from "@/components/MapComponent";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Map() {
 
@@ -10,7 +10,7 @@ export default function Map() {
     const [mapData, setMapData] = useState<MapResource[] | undefined>(undefined);
 
     useEffect(() => {
-
+        
         makeRequest("resources/", {
             method: "GET"
         }).then((result) => {
@@ -20,7 +20,7 @@ export default function Map() {
     }, []);
 
     return (
-        <PageLayout title="Map">
+        <SafeAreaView>
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
@@ -31,7 +31,7 @@ export default function Map() {
                     <MapComponent mapData={mapData}/>
                 )
             }
-        </PageLayout>
+        </SafeAreaView>
     );
 }
 
