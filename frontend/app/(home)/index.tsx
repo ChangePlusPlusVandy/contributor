@@ -1,11 +1,12 @@
-import PageLayout from "@/components/PageLayout";
 import { useApi } from "@/lib/api";
 import { useEffect } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
 
     return (
-        <PageLayout title="Home">
-        </PageLayout>
+        <SafeAreaView>
+                
+        </SafeAreaView>
     );
 }
