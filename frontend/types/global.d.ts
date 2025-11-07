@@ -14,4 +14,10 @@ declare global {
         removed: boolean
     }
 
+
+    type Resource = {
+        imageURL: string,
+        name: string
+    }
+
 }
