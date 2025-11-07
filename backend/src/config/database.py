@@ -17,7 +17,7 @@ if not supabase_url or not supabase_key:
 supabase: Client = create_client(supabase_url, supabase_key)
 
 class MongoDB:
-    # client variable 
+    # client variable
     client: AsyncMongoClient | None = None
 
     # MongoDB class methods
@@ -26,8 +26,9 @@ class MongoDB:
         """Connect to MongoDB database and initialize "client" variable."""
         try:
             cls.client = AsyncMongoClient(mongo_key, server_api = ServerApi('1'))
-            
-            # await cls.client.admin.command('ping')
+
+            # Test connection
+            await cls.client.admin.command('ping')
             print("MongoDB connected successfully!")
         except Exception as e:
             print(f"Error connecting to MongoDB: {e}")
@@ -70,14 +71,14 @@ class MongoDB:
         return cls._get_database(db_name)[col_name]
     
 # methods for getting certain collections
-async def get_resources_collection():
-    """Connect to the "resources" collection in the "the-contributor" database."""
+def get_resources_collection():
+    """Get the "resources" collection in the "the-contributor" database."""
     return MongoDB.get_collection("resources", "the-contributor")
 
-async def get_vendor_users_collection():
-    """Connect to the "vendors" collection in the "the-contributor" database."""
+def get_vendor_users_collection():
+    """Get the "vendors" collection in the "the-contributor" database."""
     return MongoDB.get_collection("vendors", "the-contributor")
 
-async def get_admin_collection():
-    """Connect to the "admins" collection in the "the-contributor" database."""
+def get_admin_collection():
+    """Get the "admins" collection in the "the-contributor" database."""
     return MongoDB.get_collection("admins", "the-contributor")

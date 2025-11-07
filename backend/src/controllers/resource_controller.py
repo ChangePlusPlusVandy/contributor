@@ -1,8 +1,17 @@
 # import requests
-from datetime import datetime, timezone
+import os
+import sys
 from fastapi import HTTPException
-from schemas.resource import Resource
 from bson import ObjectId
+from typing import List
+
+# Add the backend directory to sys.path so 'src' module can be found
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from src.schemas.resource import Resource
+from src.utils.utils import prepare_default_fields
 
 
 async def get_all_active(collection):
@@ -33,7 +42,7 @@ async def get_all_active(collection):
         return {"success": True, "resources": resources}
     except Exception as e:
         print(f"Error in get_all_resources controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
     
 
 # create a new resource and add to database
@@ -55,8 +64,7 @@ async def create_resource(resource: Resource, collection):
         resource_dict = resource.model_dump()
     
         # add necessary fields
-        resource_dict["removed"] = False
-        resource_dict["created_at"] = datetime.now(timezone.utc)
+        resource_dict.update(prepare_default_fields())
 
         # insert resource into mongoDB
         result = await collection.insert_one(resource_dict)
@@ -67,7 +75,7 @@ async def create_resource(resource: Resource, collection):
         return {"success": True, "resource": resource_dict}
     except Exception as e:
         print(f"Error in create_resource controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
     
 
 async def set_removed(resource_id: str, collection):
@@ -93,4 +101,39 @@ async def set_removed(resource_id: str, collection):
         return {"success": True, "message": "Resource set as removed.", "resource_id": resource_id}
     except Exception as e:
         print(f"Error in set_removed controller: {e}")
-        raise HTTPException(status_code = 500, detail = "Internal server error.")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+    
+
+async def seed_db(resources: List[dict], collection):
+    """
+    Seed MongoDB database with Google Sheet info, keeping in mind duplicates, 
+    old resources, etc.
+
+    Returns a list of dicts, where each dict is a resource and status that indicates whether
+    the resource was updated or newly inserted into MongoDB.
+    """
+
+    try:
+        # output list 
+        results = []
+
+        # given: resources
+        for resource in resources:
+            result = await collection.update_one(
+                {"org_name": resource["org_name"]},
+                {
+                    "$set": resource,
+                    "$setOnInsert": prepare_default_fields()
+                 },
+                upsert = True
+            )
+
+            if result.matched_count > 0:
+                results.append({"org_name": resource["org_name"], "status": "updated"})
+            else:
+                results.append({"org_name": resource["org_name"], "status": "inserted"})
+
+        return {"success": True, "results": results}
+    except Exception as e:
+        print(f"Error in seed_db_from_sheets controller: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
