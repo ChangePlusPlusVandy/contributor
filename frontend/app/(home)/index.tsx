@@ -19,7 +19,7 @@ const Resource = ({ resource }: { resource: Resource} ) => {
             }}
         >
             <Image source={resource.imageURL} style={{ width: 70, height: 70 }} contentFit="contain" />
-            <Text className="font-lexend-medium text-[12px] text-center" style={{ lineHeight: 12 }}>{resource.name}</Text>
+            <Text className="font-lexend-medium text-[10px] text-center" style={{ lineHeight: 12 }}>{resource.name}</Text>
         </View>
 
     );
@@ -52,7 +52,7 @@ const ResourceSection = ({ title, resources }: { title: string, resources: Resou
 export default function Home() {
 
     return (
-        <SafeAreaView className="flex-1 bg-[#F8F8F8]">
+        <SafeAreaView className="bg-[#F8F8F8]">
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
                 <View>
@@ -62,7 +62,7 @@ export default function Home() {
                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
             </View>
             <ScrollView
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3">
