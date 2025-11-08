@@ -32,9 +32,6 @@ export default function RootLayout() {
 		Lexend_800ExtraBold,
 		Lexend_900Black,
 	});
-	useEffect(() => {
-		setBackgroundColorAsync('#ffffff')
-	}, []);
 
 	useEffect(() => {
 		if (loaded || error) {

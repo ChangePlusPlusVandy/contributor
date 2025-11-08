@@ -53,7 +53,7 @@ export default function Home() {
 
     return (
         <SafeAreaView className="bg-[#F8F8F8]">
-            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px]">
+            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
                 <View>
                     <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
@@ -65,7 +65,7 @@ export default function Home() {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3">
+                <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3 mt-1.5">
                     <View className="ml-[10px]">
                         <Text className="font-lexend-bold text-[29px] text-[#2B84E9]">Middle Tennesse</Text>
                         <Text className="font-lexend-bold text-[29px] text-[#2B84E9] -mt-1">Resource Directory</Text>

@@ -48,6 +48,7 @@ export default function Map() {
 
     const [showFilter, setShowFilter] = useState<boolean>();
     const [distance, setDistance] = useState<number>(20);
+    const [distanceText, setDistanceText] = useState<string>("20");
 
     useEffect(() => {
         
@@ -60,7 +61,7 @@ export default function Map() {
     }, []);
 
     return (
-        <SafeAreaView className="bg-[#F8F8F8] flex-1">
+        <SafeAreaView className="bg-[#F8F8F8] h-[100%]">
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
@@ -69,8 +70,8 @@ export default function Map() {
                 ) :
                 (
                     <>
-                        <View className="w-full pb-[10px] mt-[7px] relative">
-                            <View className="flex items-center flex-row">
+                        <View className="w-full pb-[10px] relative">
+                            <View className="flex items-center flex-row h-[45px]">
                                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
                                 <View className="w-[278px] h-[33px] mr-[11px]">
                                     <View className=" bg-[#d9d9d980] rounded-[15px] w-full h-full flex flex-row items-center">
@@ -102,7 +103,7 @@ export default function Map() {
                                     <Animated.View 
                                         entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} 
                                         exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} 
-                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8] pl-[27px] pr-[55px]"
+                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8] px-10"
                                     >
                                         <Text className="font-lexend-medium text-[14px]">Distance</Text>
                                         <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
@@ -123,8 +124,14 @@ export default function Map() {
                                                 <TextInput
                                                     placeholder="1-100"
                                                     keyboardType="numeric"
-                                                    onChangeText={(value) => setDistance(clamp(Number(Number(value).toFixed(0)), 0, 100))}
-                                                    style={{ color: "#000" }}
+                                                    value={distanceText}
+                                                    onChangeText={(text) => {
+                                                        setDistanceText(text);
+                                                        const num = Number(text);
+                                                        if (!isNaN(num)) {
+                                                            setDistance(clamp(Math.round(num), 1, 100));
+                                                        }
+                                                    }}
                                                 />
                                         </View>
                                         <View className="mt-[7px] h-[26px] flex items-center flex-row">
