@@ -49,9 +49,13 @@ const Thinking = () => {
         )
     }, []);
 
-    return <Animated.View exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} style={[style]} className="mt-[17px] ml-[19px]">
-        <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 39, height: 39, marginRight: 8 }} contentFit="contain" />
-    </Animated.View>
+    return (
+        <Animated.View exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} className="mt-[17px] ml-[19px]">
+            <Animated.View style={[style]}>
+                <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 39, height: 39, marginRight: 8 }} contentFit="contain" />
+            </Animated.View>
+        </Animated.View>
+    );
 }
 
 export default function Chat() {
@@ -121,6 +125,7 @@ export default function Chat() {
 
     return (
         <SafeAreaView className="bg-[#F8F8F8] h-[100%] relative">
+            <Image source={require("../../assets/images/radial-gradient.png")} style={{ width: "100%", height: "100%", position: "absolute" }} contentFit="cover" />
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
                 <View>

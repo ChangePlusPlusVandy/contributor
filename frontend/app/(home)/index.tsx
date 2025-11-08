@@ -62,7 +62,7 @@ export default function Home() {
                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
             </View>
             <ScrollView
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: 85 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3 mt-1.5">
