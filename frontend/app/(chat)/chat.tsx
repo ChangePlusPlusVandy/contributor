@@ -1,4 +1,4 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View, Text, KeyboardAvoidingView, TextInput, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Platform } from "react-native";
@@ -66,6 +66,7 @@ export default function Chat() {
     const [thinking, setThinking] = useState<boolean>(false);
 
     const scrollViewRef = useRef<ScrollView | null>(null);
+    const insets = useSafeAreaInsets();
 
     const aiLogic = () => {
 
@@ -128,7 +129,7 @@ export default function Chat() {
     }
 
     return (
-        <SafeAreaView className="bg-[#F8F8F8] h-[100%] relative">
+        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
             <Image source={require("../../assets/images/radial-gradient.png")} style={{ width: "100%", height: "100%", position: "absolute" }} contentFit="cover" />
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
@@ -180,6 +181,6 @@ export default function Chat() {
                     </Pressable>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }

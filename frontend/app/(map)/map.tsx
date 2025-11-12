@@ -2,7 +2,7 @@ import { ActivityIndicator, View, Text, Pressable } from "react-native";
 import { useApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import MapComponent from "@/components/MapComponent";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { FadeIn, FadeOut, Easing, useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withTiming } from "react-native-reanimated";
 import Slider from '@react-native-community/slider';
@@ -76,8 +76,10 @@ export default function Map() {
 
     }, []);
 
+    const insets = useSafeAreaInsets();
+
     return (
-        <SafeAreaView className="bg-[#F8F8F8] h-[100%]">
+        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
@@ -181,7 +183,7 @@ export default function Map() {
                     </>
                 )
             }
-        </SafeAreaView>
+        </View>
     );
 }
 
