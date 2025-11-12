@@ -1,26 +1,39 @@
 import { useApi } from "@/lib/api";
 import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
 const Resource = ({ resource }: { resource: Resource} ) => {
 
+    const scale = useSharedValue<number>(1);
+    const style = useAnimatedStyle(() => (
+        {
+            transform: [{ scale: scale.value }]
+        }
+    ));
+
     return (
-        <View
-            className="w-[100px] h-[100px] rounded-[12px] bg-white flex justify-start items-center mr-[10px]"
-            style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 2, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 4,
-            }}
-        >
-            <Image source={resource.imageURL} style={{ width: 70, height: 70 }} contentFit="contain" />
-            <Text className="font-lexend-medium text-[10px] text-center" style={{ lineHeight: 12 }}>{resource.name}</Text>
-        </View>
+        <Pressable onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
+            <Animated.View
+                className="w-[100px] h-[100px] rounded-[12px] bg-white flex justify-start items-center mr-[10px]"
+                style={[
+                    {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 2, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 4
+                    },
+                    style
+                ]}
+            >
+                <Image source={resource.imageURL} style={{ width: 70, height: 70 }} contentFit="contain" />
+                <Text className="font-lexend-medium text-[10px] text-center" style={{ lineHeight: 12 }}>{resource.name}</Text>
+            </Animated.View>
+        </Pressable>
 
     );
 

@@ -1,7 +1,6 @@
 import { NativeTabs, Icon, Label, Badge } from 'expo-router/unstable-native-tabs';
 import "../global.css"
-import { setBackgroundColorAsync } from 'expo-system-ui'
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import {
 	useFonts,
@@ -35,7 +34,7 @@ export default function RootLayout() {
 
 	useEffect(() => {
 		if (loaded || error) {
-			SplashScreen.hideAsync();
+			setTimeout(() => SplashScreen.hideAsync(), 1000);
 		}
 	}, [loaded, error]);
 

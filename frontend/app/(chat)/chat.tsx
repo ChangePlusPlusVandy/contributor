@@ -1,8 +1,8 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View, Text, KeyboardAvoidingView, TextInput, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Platform } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Animated, { FadeOut, FadeIn, Easing, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { ScrollView } from "react-native";
 import { Keyboard } from "react-native";
@@ -15,7 +15,7 @@ type MessageType = {
 const Message = ({ role, content }: MessageType) => {
     if (role === "user") {
         return (
-            <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="p-[10px] w-[188px] bg-white border-solid border-2 border-black/10 rounded-[10px] mr-[19px] ml-auto mt-[17px]">
+            <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="p-[10px] max-w-[188px] bg-white border-solid border-2 border-black/10 rounded-[10px] mr-[19px] ml-auto mt-[17px]">
                 <Text className="text-[14px]">{content}</Text>
             </Animated.View>
         );
@@ -24,7 +24,7 @@ const Message = ({ role, content }: MessageType) => {
         return (
             <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="flex justify-start items-start flex-row mt-[17px] ml-[19px]">
                 <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 39, height: 39, marginRight: 8 }} contentFit="contain" />
-                <View className="p-[10px] w-[210px] bg-[#E0F5FF] border-solid border-2 border-black/10 rounded-[10px]">
+                <View className="p-[10px] max-w-[210px] bg-[#E0F5FF] border-solid border-2 border-black/10 rounded-[10px]">
                     <Text className="text-[14px]">{content}</Text>
                 </View>
             </Animated.View>
@@ -65,6 +65,9 @@ export default function Chat() {
     const [inputText, setInputText] = useState<string>("");
     const [thinking, setThinking] = useState<boolean>(false);
 
+    const scrollViewRef = useRef<ScrollView | null>(null);
+    const insets = useSafeAreaInsets();
+
     const aiLogic = () => {
 
         setChats(prev => (
@@ -83,7 +86,7 @@ export default function Chat() {
 
     const onEndEditing = () => {
 
-        if (inputText === "") return;
+        if (inputText === "" || thinking) return;
 
         setChats(prev => (
             [
@@ -98,7 +101,9 @@ export default function Chat() {
         setChatting(true);
         setInputText("");
         setThinking(true);
+        
         Keyboard.dismiss();
+        // scrollViewRef.current?.scrollToEnd({ animated: true });
 
         setTimeout(aiLogic, 5000);
 
@@ -124,7 +129,7 @@ export default function Chat() {
     }
 
     return (
-        <SafeAreaView className="bg-[#F8F8F8] h-[100%] relative">
+        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
             <Image source={require("../../assets/images/radial-gradient.png")} style={{ width: "100%", height: "100%", position: "absolute" }} contentFit="cover" />
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
@@ -136,7 +141,7 @@ export default function Chat() {
             {
                 chatting &&
                 <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="flex-1 mb-[120px]">
-                    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                    <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
                         {
                             chats?.map((chat, key) => (
                                 <Message role={chat.role} content={chat.content} key={key}/>
@@ -176,6 +181,6 @@ export default function Chat() {
                     </Pressable>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }

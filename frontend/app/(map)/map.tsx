@@ -2,9 +2,9 @@ import { ActivityIndicator, View, Text, Pressable } from "react-native";
 import { useApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import MapComponent from "@/components/MapComponent";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import Animated, { FadeIn, FadeOut, Easing, useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, Easing, useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withTiming } from "react-native-reanimated";
 import Slider from '@react-native-community/slider';
 import { TextInput } from "react-native";
 import { clamp } from "@/lib/utils";
@@ -12,13 +12,28 @@ import { Keyboard, TouchableWithoutFeedback } from "react-native";
 
 const FilterButton = ({ title, width, height, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, textSize?: number, onPress?: () => void }) => {
 
+    const color = useSharedValue<number>(0);
     const scale = useSharedValue<number>(1);
-    const style = useAnimatedStyle(() => ({
+    const scaleStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }]
     }));
 
+    const colorStyle = useAnimatedStyle(() => {
+        const backgroundColor = interpolateColor(
+            color.value,
+            [0, 1],
+            ["#ffffff", "#D9D9D9"]
+        );
+
+        return { backgroundColor };
+    });
+
+    const toggleColor = () => {
+        color.value = withTiming(color.value === 0 ? 1 : 0, { duration: 300 });
+    };
+
     return (
-        <Pressable onPress={() => onPress?.()} onPressIn={() => scale.value = withSpring(0.8, { damping: 50, stiffness: 400, mass: 5 })} onPressOut={() => scale.value = withSpring(1)}>
+        <Pressable onPress={() => { onPress?.(); toggleColor(); }} onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
             <Animated.View
                 className={`flex justify-center items-center rounded-[5px] bg-white`}
                 style={[
@@ -29,9 +44,10 @@ const FilterButton = ({ title, width, height, textSize = 12, onPress = () => nul
                         shadowRadius: 4,
                         elevation: 4,
                         width,
-                        height
+                        height,
                     },
-                    style   
+                    scaleStyle,
+                    colorStyle 
                 ]}
             >
                 <Text style={{ fontSize: textSize }} className="font-lexend-medium text-[12px] text-center">{title}</Text>
@@ -46,7 +62,7 @@ export default function Map() {
     const { makeRequest } = useApi();
     const [mapData, setMapData] = useState<MapResource[] | undefined>(undefined);
 
-    const [showFilter, setShowFilter] = useState<boolean>();
+    const [showFilter, setShowFilter] = useState<boolean>(false);
     const [distance, setDistance] = useState<number>(20);
     const [distanceText, setDistanceText] = useState<string>("20");
 
@@ -60,8 +76,10 @@ export default function Map() {
 
     }, []);
 
+    const insets = useSafeAreaInsets();
+
     return (
-        <SafeAreaView className="bg-[#F8F8F8] h-[100%]">
+        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
@@ -98,71 +116,74 @@ export default function Map() {
                         </View>
                         <View>
                             {
-                                showFilter && 
-                                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                                    <Animated.View 
-                                        entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} 
-                                        exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} 
-                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8] px-10"
+                                showFilter && (
+                                    <Animated.View
+                                        entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))}
+                                        exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))}
+                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8]"
                                     >
-                                        <Text className="font-lexend-medium text-[14px]">Distance</Text>
-                                        <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
-                                        <Slider
-                                            style={{ width: "auto", height: 35 }}
-                                            minimumValue={1}
-                                            maximumValue={100}
-                                            value={distance}
-                                            step={1}
-                                            onValueChange={(value) => setDistance(value)}
-                                        />
-                                        <View className="flex flex-row justify-between items-center">
-                                            <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
-                                            <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">100</Text>
-                                        </View>
-                                        <View className="mt-[7px] bg-[#D9D9D9] w-full rounded-[5px] py-[6px] px-[8px]">
-                                            <Text className="text-[#767676] font-lexend-medium text-[10px]">Enter distance (miles)</Text>
-                                                <TextInput
-                                                    placeholder="1-100"
-                                                    keyboardType="numeric"
-                                                    value={distanceText}
-                                                    onChangeText={(text) => {
-                                                        setDistanceText(text);
-                                                        const num = Number(text);
-                                                        if (!isNaN(num)) {
-                                                            setDistance(clamp(Math.round(num), 1, 100));
-                                                        }
-                                                    }}
+                                        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                                        <View style={{ paddingHorizontal: 40 }}>
+                                                <Text className="font-lexend-medium text-[14px]">Distance</Text>
+                                                <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
+                                                <Slider
+                                                    style={{ width: "auto", height: 35 }}
+                                                    minimumValue={1}
+                                                    maximumValue={100}
+                                                    value={distance}
+                                                    step={1}
+                                                    onValueChange={(value) => setDistance(value)}
                                                 />
-                                        </View>
-                                        <View className="mt-[7px] h-[26px] flex items-center flex-row">
-                                            <Text className="font-lexend-medium text-[14px]">Filter</Text>
-                                        </View>
-                                        <View className="flex flex-row justify-between items-center mt-[8px]">
-                                            <FilterButton title="Open Now" width={145} height={35}/>
-                                            <FilterButton title="ID Not Required" width={145} height={35} />
-                                        </View>
-                                        <View className="mt-[7px] h-[26px] flex items-center flex-row">
-                                            <Text className="font-lexend-medium text-[14px]">Category</Text>
-                                        </View>
-                                        <View className="flex flex-row justify-between items-center mt-[8px]">
-                                            <FilterButton title="Urgent Needs" textSize={10} width={98} height={32} />
-                                            <FilterButton title="Health & Wellness" textSize={10} width={98} height={32} />
-                                            <FilterButton title="Family & Pets" textSize={10} width={98} height={32} />
-                                        </View>
-                                        <View className="flex flex-row justify-between items-center mt-[7px]">
-                                            <FilterButton title="Specialized" textSize={10} width={98} height={32} />
-                                            <FilterButton title="Help" textSize={10} width={98} height={32} />
-                                            <FilterButton title="Find Work" textSize={10} width={98} height={32} />
-                                        </View>
+                                                <View className="flex flex-row justify-between items-center">
+                                                    <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
+                                                    <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">100</Text>
+                                                </View>
+                                                <View className="mt-[7px] bg-[#D9D9D9] w-full rounded-[5px] py-[6px] px-[8px]">
+                                                    <Text className="text-[#767676] font-lexend-medium text-[10px]">Enter distance (miles)</Text>
+                                                    <TextInput
+                                                        placeholder="1-100"
+                                                        keyboardType="numeric"
+                                                        value={distanceText}
+                                                        onChangeText={(text) => {
+                                                            setDistanceText(text);
+                                                            const num = Number(text);
+                                                            if (!isNaN(num)) {
+                                                                setDistance(clamp(Math.round(num), 1, 100));
+                                                            }
+                                                        }}
+                                                    />
+                                                </View>
+                                                <View className="mt-[7px] h-[26px] flex items-center flex-row">
+                                                    <Text className="font-lexend-medium text-[14px]">Filter</Text>
+                                                </View>
+                                                <View className="flex flex-row justify-between items-center mt-[8px]">
+                                                    <FilterButton title="Open Now" width={145} height={35}/>
+                                                    <FilterButton title="ID Not Required" width={145} height={35} />
+                                                </View>
+                                                <View className="mt-[7px] h-[26px] flex items-center flex-row">
+                                                    <Text className="font-lexend-medium text-[14px]">Category</Text>
+                                                </View>
+                                                <View className="flex flex-row justify-between items-center mt-[8px]">
+                                                    <FilterButton title="Urgent Needs" textSize={10} width={98} height={32} />
+                                                    <FilterButton title="Health & Wellness" textSize={10} width={98} height={32} />
+                                                    <FilterButton title="Family & Pets" textSize={10} width={98} height={32} />
+                                                </View>
+                                                <View className="flex flex-row justify-between items-center mt-[7px]">
+                                                    <FilterButton title="Specialized" textSize={10} width={98} height={32} />
+                                                    <FilterButton title="Help" textSize={10} width={98} height={32} />
+                                                    <FilterButton title="Find Work" textSize={10} width={98} height={32} />
+                                                </View>
+                                            </View>
+                                        </TouchableWithoutFeedback>
                                     </Animated.View>
-                                </TouchableWithoutFeedback>
+                                )
                             }
                             <MapComponent mapData={mapData} />
                         </View>
                     </>
                 )
             }
-        </SafeAreaView>
+        </View>
     );
 }
 
