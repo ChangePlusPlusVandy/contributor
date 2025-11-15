@@ -1,7 +1,7 @@
 # import requests
 import os
 import sys
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from bson import ObjectId
 from typing import List
 
@@ -45,7 +45,6 @@ async def get_all_active(collection):
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
-# create a new resource and add to database
 async def create_resource(resource: Resource, collection):
     """
     Create a resource and add it to the database. Before adding, set "removed" to false, add time
@@ -64,7 +63,7 @@ async def create_resource(resource: Resource, collection):
         resource_dict = resource.model_dump()
     
         # add necessary fields
-        resource_dict.update(prepare_default_fields())
+        resource_dict.update(prepare_default_fields(resource_dict["address"]))
 
         # insert resource into mongoDB
         result = await collection.insert_one(resource_dict)
@@ -76,6 +75,23 @@ async def create_resource(resource: Resource, collection):
     except Exception as e:
         print(f"Error in create_resource controller: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
+    
+
+async def get_resource(resource_id: str, collection):
+    """Get a resource based on its id."""
+
+    try:
+        object_id = ObjectId(resource_id)
+
+        resource = await collection.find_one({"_id": object_id})
+
+        if resource:
+            resource["_id"] = str(resource["_id"])
+
+        return {"success": True, "resource": resource}
+    except Exception as e:
+        print(f"Error in get_resource controller: {e}")
+        raise HTTPException(status_code=500, detail="Interal server error.")
     
 
 async def set_removed(resource_id: str, collection):
