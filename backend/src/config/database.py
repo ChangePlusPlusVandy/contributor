@@ -82,3 +82,7 @@ def get_vendor_users_collection():
 def get_admin_collection():
     """Get the "admins" collection in the "the-contributor" database."""
     return MongoDB.get_collection("admins", "the-contributor")
+
+def get_pending_collection():
+    """Get the "pending" collection in the "the-contributor" database."""
+    return MongoDB.get_collection("pending", "the-contributor")

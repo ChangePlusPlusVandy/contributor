@@ -1,6 +1,7 @@
 import os
 import sys
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+
 from typing import List
 
 # Add the backend directory to sys.path so 'src' module can be found
@@ -10,11 +11,16 @@ if backend_dir not in sys.path:
 
 from src.schemas.resource import Resource
 from src.controllers.resource_controller import (
-    get_all_active, 
-    create_resource,  
-    seed_db
+    get_all_active,
+    create_resource,
+    get_resource,
+    update_resource,
+    seed_db,
+    receive_form,
+    approve_submission,
+    deny_submission
 )
-from src.config.database import get_resources_collection
+from src.config.database import get_resources_collection, get_pending_collection
 from src.config.logger import get_logger
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
@@ -54,7 +60,69 @@ async def route_create_resource(resource: Resource):
         logger.error(f"Error creating resource: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create resource")
 
-    
+
+@router.get("/{identifier}")
+async def route_get_resource(identifier: str, search_by: str = "id"):
+    """
+    Get a resource by its ID or org_name.
+
+    Args:
+        identifier: Either a MongoDB ObjectId string or an org_name
+        search_by: Either "id" (default) or "org_name" to specify search field
+
+    Returns the resource document or None if not found.
+
+    Examples:
+        GET /resources/507f1f77bcf86cd799439011?search_by=id
+        GET /resources/Acme%20Foundation?search_by=org_name
+    """
+    logger.info(f"Getting resource with {search_by}={identifier}")
+    try:
+        collection = get_resources_collection()
+        resource = await get_resource(identifier, collection, search_by)
+
+        if resource.get("resource"):
+            logger.info(f"Successfully retrieved resource with {search_by}={identifier}")
+        else:
+            logger.warning(f"No resource found with {search_by}={identifier}")
+
+        return resource
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving resource with {search_by}={identifier}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve resource")
+
+
+@router.patch("/{resource_id}")
+async def route_update_resource(resource_id: str, updates: dict):
+    """
+    Update a resource with the provided fields.
+
+    Args:
+        resource_id: MongoDB ObjectId as a string
+        updates: Dictionary of fields to update
+
+    Returns success status and update information.
+
+    Example request body:
+        {"removed": true}
+        {"email": "newemail@example.com", "phone": 1234567890}
+    """
+    logger.info(f"Updating resource {resource_id} with fields: {list(updates.keys())}")
+    try:
+        collection = get_resources_collection()
+        result = await update_resource(resource_id, updates, collection)
+
+        logger.info(f"Successfully updated resource {resource_id}. Modified {result.get('modified_count', 0)} field(s)")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating resource {resource_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update resource")
+
+
 @router.post("/seed")
 async def route_seed_db(resources: List[dict]):
     """
@@ -75,3 +143,72 @@ async def route_seed_db(resources: List[dict]):
     except Exception as e:
         logger.error(f"Error seeding database: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to seed database from sheets")
+
+@router.post("/form")
+async def route_receive_form(request: Request):
+    """Receive a form submission and convert to JSON."""
+    logger.info(f"Receiving form submission")
+    try:
+        pend_col = get_pending_collection()
+        res_col = get_resources_collection()
+
+        resource = await receive_form(request, pend_col, res_col)
+        logger.info("Successfully received submission from form")
+        return resource
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error receiving form submission: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to receive form submission")
+
+
+@router.post("/pending/{submission_id}/approve")
+async def route_approve_submission(submission_id: str):
+    """
+    Approve a pending submission.
+
+    Args:
+        submission_id: MongoDB ObjectId of the pending submission
+
+    Returns success status and action taken (created or updated).
+    """
+    logger.info(f"Approving submission {submission_id}")
+    try:
+        pend_col = get_pending_collection()
+        res_col = get_resources_collection()
+
+        result = await approve_submission(submission_id, pend_col, res_col)
+
+        logger.info(f"Successfully approved submission {submission_id}. Action: {result.get('action')}")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error approving submission {submission_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to approve submission")
+
+
+@router.post("/pending/{submission_id}/deny")
+async def route_deny_submission(submission_id: str):
+    """
+    Deny a pending submission.
+
+    Args:
+        submission_id: MongoDB ObjectId of the pending submission
+
+    Returns success status.
+    """
+    logger.info(f"Denying submission {submission_id}")
+    try:
+        pend_col = get_pending_collection()
+
+        result = await deny_submission(submission_id, pend_col)
+
+        logger.info(f"Successfully denied submission {submission_id}")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error denying submission {submission_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to deny submission")
