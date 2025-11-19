@@ -13,6 +13,7 @@ if backend_dir not in sys.path:
 
 from src.schemas.resource import Resource
 from src.utils.utils import prepare_default_fields
+from src.utils.email_notifications import send_submission_status_email 
 
 
 async def get_all_active(collection):
@@ -268,6 +269,10 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
 
         if not pending:
             raise HTTPException(status_code=404, detail="Pending submission not found")
+        
+        # extract data for email notification
+        to_email = pending.get("email")
+        org_name = pending.get("org_name")
 
         # remove metadata fields before creating/updating resource
         resource_data = {k: v for k, v in pending.items()
@@ -291,6 +296,15 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
 
         # remove from pending collection
         await pending_collection.delete_one({"_id": ObjectId(submission_id)})
+
+        # send update email
+        if to_email:
+            await send_submission_status_email(
+                to_email=to_email,
+                org_name=org_name,
+                status="approved",
+                extra_message=None,
+            )
 
         return {
             "success": True,
@@ -324,12 +338,25 @@ async def deny_submission(submission_id: str, pending_collection):
 
         if not pending:
             raise HTTPException(status_code=404, detail="Pending submission not found")
+        
+        # extract data for email notification
+        to_email = pending.get("email")
+        org_name = pending.get("org_name")
 
         # remove from pending collection
         result = await pending_collection.delete_one({"_id": ObjectId(submission_id)})
 
         if result.deleted_count == 0:
             raise HTTPException(status_code=500, detail="Failed to delete submission")
+        
+        # send update email
+        if to_email:
+         await send_submission_status_email(
+             to_email=to_email,
+             org_name=org_name,
+             status="denied",
+             extra_message=None,
+         )
 
         return {
             "success": True,
