@@ -16,9 +16,17 @@ def _geocode_address(address: str):
     else:
         return None
 
-def prepare_default_fields() -> dict:
+def prepare_default_fields(address: str) -> dict:
     """Returns default fields for new resources."""
+    # what if address is not there
+    if address is not None: 
+        lat_long = _geocode_address(address)
+    else:
+        lat_long = None
+    
     return {
         "removed": False,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(timezone.utc),
+        "latitude": lat_long["lat"] if lat_long is not None else None,
+        "longitude": lat_long["lng"] if lat_long is not None else None
     }
