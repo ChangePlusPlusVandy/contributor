@@ -22,7 +22,7 @@ const FilterButton = ({ title, width, height, textSize = 12, onPress = () => nul
         const backgroundColor = interpolateColor(
             color.value,
             [0, 1],
-            ["#ffffff", "#D9D9D9"]
+            ["#ffffff", "#2B84E999"]
         );
 
         return { backgroundColor };
@@ -79,7 +79,7 @@ export default function Map() {
     const insets = useSafeAreaInsets();
 
     return (
-        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
+        <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom - 10 }}>
             {
                 mapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
