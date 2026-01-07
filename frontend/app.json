@@ -1,66 +1,68 @@
 {
-	"expo": {
-		"name": "The Contributor",
-		"slug": "TheContributor",
-		"version": "1.0.0",
-		"orientation": "portrait",
-		"scheme": "frontend",
-		"userInterfaceStyle": "light",
-		"newArchEnabled": true,
-		"ios": {
-			"supportsTablet": true,
-			"bundleIdentifier": "contributor",
-			"infoPlist": {
-				"ITSAppUsesNonExemptEncryption": false
-			}
-		},
-		"android": {
-			"adaptiveIcon": {
-				"backgroundColor": "#E6F4FE",
-				"foregroundImage": "./assets/images/android-icon-foreground.png",
-				"backgroundImage": "./assets/images/android-icon-background.png",
-				"monochromeImage": "./assets/images/android-icon-monochrome.png"
-			},
-			"edgeToEdgeEnabled": true,
-			"predictiveBackGestureEnabled": false
-		},
-		"web": {
-			"output": "static",
-			"favicon": "./assets/images/favicon.png",
-			"bundler": "metro"
-		},
-		"plugins": [
-			"expo-router",
-			[
-				"expo-splash-screen",
-				{
-					"backgroundColor": "#232323",
-					"image": "./assets/images/splash-icon.png",
-					"dark": {
-						"image": "./assets/images/splash-icon-dark.png",
-						"backgroundColor": "#000000"
-					},
-					"imageWidth": 100
-				}
-			],
-			[
-				"expo-location",
-				{
-					"locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
-				}
-			]
-		],
-		"experiments": {
-			"typedRoutes": true,
-			"reactCompiler": true
-		},
-		"backgroundColor": "#ffffff",
-		"extra": {
-			"router": {},
-			"eas": {
-				"projectId": "478fe063-aa93-42be-bd53-c2e93810bf3d"
-			}
-		},
-		"owner": "noah_l_0"
-	}
+  "expo": {
+    "name": "The Contributor",
+    "slug": "TheContributor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "frontend",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "contributor",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#232323",
+          "image": "./assets/images/splash-icon.png",
+          "dark": {
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#000000"
+          },
+          "imageWidth": 100
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "backgroundColor": "#ffffff",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "478fe063-aa93-42be-bd53-c2e93810bf3d"
+      }
+    },
+    "owner": "noah_l_0"
+  }
 }
