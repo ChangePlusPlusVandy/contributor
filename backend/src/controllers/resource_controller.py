@@ -16,23 +16,26 @@ from src.utils.utils import prepare_default_fields
 from src.utils.email_notifications import send_submission_status_email 
 
 
-async def get_all_active(collection):
+async def get_resources(collection, active: bool):
     """
     Retrieve all resources from the database where "removed" is false.
 
     Args:
         collection: MongoDB collection instance ("resources")
+        active: True if only "active" resources are to be fetched, False if all resources are to be fetched
 
     Returns:
         dict: Contains:
-            - 'success' (bool): True if active resources successfully fetched
+            - 'success' (bool): True if resources successfully fetched
+            - 'active' (bool): True if only active resources fetched, False if all resources fetched
             - 'resources' (list of dicts): a list of Resource documents
     """
     try:
         resources = []
         
-        # query for Resources where the field "removed" is false
-        cursor = collection.find({"removed": False})
+        # find active/all resources depending on "active" boolean parameter
+        query = {"removed": False} if active else {}
+        cursor = collection.find(query)
         
         # add all valid queries into list
         async for document in cursor:
@@ -41,7 +44,11 @@ async def get_all_active(collection):
             resources.append(document)
         
         # return success message and resources as a list of dicts
-        return {"success": True, "resources": resources}
+        return {
+            "success": True, 
+            "active": active,
+            "resources": resources
+        }
     except Exception as e:
         print(f"Error in get_all_resources controller: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")

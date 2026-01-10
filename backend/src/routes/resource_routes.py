@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
 
 from src.schemas.resource import Resource
 from src.controllers.resource_controller import (
-    get_all_active,
+    get_resources,
     create_resource,
     get_resource,
     update_resource,
@@ -27,17 +27,27 @@ router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
 
 @router.get("/")
-async def route_get_resources():
+async def route_get_resources(active: bool = True):
     """
-    Retrieve all active resources.
+    Retrieve resources from MongoDB.
 
-    Returns all resources where "removed" is False.
+    Args:
+        active: True if only "active" resources are to be fetched, False if all resources are to be fetched
+
+    Example: 
+        GET /resources?active=false
+
+    Returns:
+        JSON object containing:
+            - success: whether the request succeeded
+            - active: the filter applied
+            - resources: list of resources 
     """
     logger.info("Fetching all active resources...")
     try:
         collection = get_resources_collection()
-        resources = await get_all_active(collection)
-        logger.info(f"Successfully retrieved {len(resources.get('resources', []))} active resources.")
+        resources = await get_resources(collection, active)
+        logger.info(f"Successfully retrieved {len(resources.get('resources', []))} {'active ' if active else ''} resources.")
         return resources
     except Exception as e:
         logger.error(f"Error retrieving resources: {e}", exc_info=True)
