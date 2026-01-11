@@ -172,6 +172,38 @@ async def route_receive_form(request: Request):
         logger.error(f"Error receiving form submission: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to receive form submission")
 
+@router.post("/testform")
+async def route_test_form(request: Request):
+    """Test endpoint to see what form submission data looks like."""
+    try:
+        # Try to get the raw body first
+        body = await request.body()
+        logger.info(f"Raw body: {body.decode('utf-8')}")
+
+        # Try to parse as form data
+        form_data = await request.form()
+        form_dict = {key: value for key, value in form_data.items()}
+        logger.info(f"Form data: {form_dict}")
+
+        # Try to parse as JSON (in case it is JSON)
+        try:
+            json_data = await request.json()
+            logger.info(f"JSON data: {json_data}")
+        except:
+            json_data = None
+
+        return {
+            "success": True,
+            "message": "Test form received",
+            "content_type": request.headers.get("content-type"),
+            "raw_body": body.decode('utf-8'),
+            "form_data": form_dict,
+            "json_data": json_data
+        }
+    except Exception as e:
+        logger.error(f"Error in test form endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing test form: {str(e)}")
+
 
 @router.post("/pending/{submission_id}/approve")
 async def route_approve_submission(submission_id: str):
