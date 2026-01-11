@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
 
 from src.schemas.resource import Resource
 from src.controllers.resource_controller import (
-    get_all_active,
+    get_resources,
     create_resource,
     get_resource,
     update_resource,
@@ -27,17 +27,27 @@ router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
 
 @router.get("/")
-async def route_get_resources():
+async def route_get_resources(active: bool = True):
     """
-    Retrieve all active resources.
+    Retrieve resources from MongoDB.
 
-    Returns all resources where "removed" is False.
+    Args:
+        active: True if only "active" resources are to be fetched, False if all resources are to be fetched
+
+    Example: 
+        GET /resources?active=false
+
+    Returns:
+        JSON object containing:
+            - success: whether the request succeeded
+            - active: the filter applied
+            - resources: list of resources 
     """
     logger.info("Fetching all active resources...")
     try:
         collection = get_resources_collection()
-        resources = await get_all_active(collection)
-        logger.info(f"Successfully retrieved {len(resources.get('resources', []))} active resources.")
+        resources = await get_resources(collection, active)
+        logger.info(f"Successfully retrieved {len(resources.get('resources', []))} {'active ' if active else ''} resources.")
         return resources
     except Exception as e:
         logger.error(f"Error retrieving resources: {e}", exc_info=True)
@@ -161,6 +171,38 @@ async def route_receive_form(request: Request):
     except Exception as e:
         logger.error(f"Error receiving form submission: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to receive form submission")
+
+@router.post("/testform")
+async def route_test_form(request: Request):
+    """Test endpoint to see what form submission data looks like."""
+    try:
+        # Try to get the raw body first
+        body = await request.body()
+        logger.info(f"Raw body: {body.decode('utf-8')}")
+
+        # Try to parse as form data
+        form_data = await request.form()
+        form_dict = {key: value for key, value in form_data.items()}
+        logger.info(f"Form data: {form_dict}")
+
+        # Try to parse as JSON (in case it is JSON)
+        try:
+            json_data = await request.json()
+            logger.info(f"JSON data: {json_data}")
+        except:
+            json_data = None
+
+        return {
+            "success": True,
+            "message": "Test form received",
+            "content_type": request.headers.get("content-type"),
+            "raw_body": body.decode('utf-8'),
+            "form_data": form_dict,
+            "json_data": json_data
+        }
+    except Exception as e:
+        logger.error(f"Error in test form endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing test form: {str(e)}")
 
 
 @router.post("/pending/{submission_id}/approve")

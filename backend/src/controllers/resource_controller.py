@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from bson import ObjectId
 from typing import List
 from datetime import datetime, timezone
+import json
 
 # Add the backend directory to sys.path so 'src' module can be found
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,27 +13,33 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from src.schemas.resource import Resource
-from src.utils.utils import prepare_default_fields
+from src.utils.utils import (
+    prepare_default_fields,
+    extract_field_data   
+)
 from src.utils.email_notifications import send_submission_status_email 
 
 
-async def get_all_active(collection):
+async def get_resources(collection, active: bool):
     """
     Retrieve all resources from the database where "removed" is false.
 
     Args:
         collection: MongoDB collection instance ("resources")
+        active: True if only "active" resources are to be fetched, False if all resources are to be fetched
 
     Returns:
         dict: Contains:
-            - 'success' (bool): True if active resources successfully fetched
+            - 'success' (bool): True if resources successfully fetched
+            - 'active' (bool): True if only active resources fetched, False if all resources fetched
             - 'resources' (list of dicts): a list of Resource documents
     """
     try:
         resources = []
         
-        # query for Resources where the field "removed" is false
-        cursor = collection.find({"removed": False})
+        # find active/all resources depending on "active" boolean parameter
+        query = {"removed": False} if active else {}
+        cursor = collection.find(query)
         
         # add all valid queries into list
         async for document in cursor:
@@ -41,7 +48,11 @@ async def get_all_active(collection):
             resources.append(document)
         
         # return success message and resources as a list of dicts
-        return {"success": True, "resources": resources}
+        return {
+            "success": True, 
+            "active": active,
+            "resources": resources
+        }
     except Exception as e:
         print(f"Error in get_all_resources controller: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
@@ -208,39 +219,66 @@ async def seed_db(resources: List[dict], collection):
     
 
 async def receive_form(request: Request, pending_collection, resource_collection):
-    """Receives a form submission."""
+    """Receives a form submission from JotForm webhook."""
     try:  
-        res = await request.json()
+        # Parsing multipart form data
+        form_data = await request.form()
+        form_dict = { key: value for key, value in form_data.items() }
+
+        # Extract actual question data from "rawRequest" field
+        raw_req_str = form_dict.get('rawRequest')
+
+        if not raw_req_str:
+            raise HTTPException(status_code=400, detail="No rawRequest field in form data")
+        
+        raw_request_data = json.loads(raw_req_str)
+
+        resource_data = extract_field_data(raw_request_data)
+
+        print(f"Extracted resource data: {resource_data}")
 
         # create resource with form data
-        new_resource = Resource(
-            **res,
-            submitted_at=datetime.now(timezone.utc),
-            submitted_by=res.get("name")
-        )
+        # new_resource = Resource(
+        #     **resource_data,
+        #     submitted_at=datetime.now(timezone.utc),
+        #     submitted_by=resource_data.get("name")
+        # )
 
-        if new_resource.add:
+        if resource_data.get('add'):
             # simply add to the pending collection
-            await pending_collection.insert_one(new_resource.model_dump())
+            new_resource = Resource(
+                **resource_data,
+                submitted_at=datetime.now(timezone.utc),
+                submitted_by=resource_data.get("name")
+            )
+            result = await pending_collection.insert_one(new_resource.model_dump())
+
+            return {
+                "success": True,
+                "message": "New resource submissino added to pending collection",
+                "resource": new_resource.model_dump()
+            }
         else:
             # find the existing resource - search by name
-            existing = await resource_collection.find_one({"org_name": new_resource.org_name})
+            existing = await resource_collection.find_one({"org_name": resource_data.get('org_name')})
 
             if existing:
                 updated_resource = Resource(
-                    **res,
+                    **resource_data,
                     original_resource_id=str(existing["_id"]),
                     submitted_at=datetime.now(timezone.utc),
-                    submitted_by=res.get("name")
+                    submitted_by=resource_data.get("name")
                 )
-                await pending_collection.insert_one(updated_resource.model_dump())
+                result = await pending_collection.insert_one(updated_resource.model_dump())
+
+                return {
+                    "success": True,
+                    "message": "Resource update submission added to pending collection",
+                    "resource": updated_resource.model_dump()
+                }
             else:
                 raise HTTPException(status_code=422, detail=f"Cannot update: No existing resource with org_name='{new_resource.org_name}'")
 
-        return {
-            "success": True,
-            "resource": new_resource.model_dump()
-        }
     except HTTPException:
         raise
     except Exception as e:
