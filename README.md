@@ -31,18 +31,21 @@ Phase 1: A full stack mobile app using React Native and FastAPI.
 ## Tech Stack
 
 **Backend:**
+
 - Python 3.13+ with FastAPI
 - Supabase (Authentication & PostgreSQL Database)
 - MongoDB (NoSQL Database)
 - uv (Python Package Manager)
 
 **Frontend:**
+
 - React Native with Expo
 - TypeScript
 - Expo Router (File-based routing)
 - NativeWind (Tailwind CSS for React Native)
 
 **IDE & MCPs**
+
 - Cursor (strongly recommended, not required)
 - Context7 MCP (extremely helpful), contact me to install for free
 
@@ -55,12 +58,14 @@ Before you begin, ensure you have the following installed on your system:
 ### 1. Python (3.13 or higher)
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install python@3.13
 ```
 
 **Windows:**
+
 - Download the installer from [python.org](https://www.python.org/downloads/)
 - During installation, check "Add Python to PATH"
 - Verify installation: `python --version`
@@ -68,12 +73,14 @@ brew install python@3.13
 ### 2. Node.js and npm (Latest LTS version)
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install node
 ```
 
 **Windows:**
+
 - Download the installer from [nodejs.org](https://nodejs.org/)
 - Run the installer (npm is included)
 - Verify installation: `node --version` and `npm --version`
@@ -81,16 +88,19 @@ brew install node
 ### 3. uv (Python Package Manager)
 
 **macOS and Linux:**
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 **Windows:**
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 Verify installation:
+
 ```bash
 uv --version
 ```
@@ -98,11 +108,13 @@ uv --version
 ### 4. Git
 
 **macOS:**
+
 ```bash
 brew install git
 ```
 
 **Windows:**
+
 - Download from [git-scm.com](https://git-scm.com/download/win)
 
 ---
@@ -131,7 +143,9 @@ Create a `.env` file in the directory:
 ```bash
 touch .env
 ```
+
 Then, add these keys (found in notion database) to your env file.
+
 ```bash
 # backend/.env
 SUPABASE_URL=your-supabase-url
@@ -161,6 +175,7 @@ npm install -g expo-cli
 ### 5. Mobile Testing Setup
 
 **For Testing on Physical Device (Recommended for Beginners):**
+
 - Install the Expo Go app on your iOS or Android device
 - Download from [App Store](https://apps.apple.com/app/expo-go/id982107779) or [Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
 - Scan the QR code when you run `npm start` to test on your device
@@ -181,7 +196,7 @@ From the `backend` directory:
 
 ```bash
 cd backend/src
-uvicorn main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 The API will be available at `http://127.0.0.1:8000`
@@ -194,7 +209,6 @@ From the `frontend` directory:
 cd frontend
 npm start
 ```
-
 
 This will open the Expo DevTools in your browser. You can then:
 
@@ -252,21 +266,25 @@ the-contributor/
 ## Troubleshooting
 
 **Backend won't start:**
+
 - Ensure Python 3.13+ is installed: `python --version`
 - Verify uv sync completed successfully
 - Check that `.env` file exists with correct credentials
 
 **Frontend won't start:**
+
 - Clear npm cache: `npm cache clean --force`
 - Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
 - Ensure Expo CLI is up to date: `npm install -g expo-cli@latest`
 
 **Expo app won't connect:**
+
 - Ensure your phone and computer are on the same WiFi network
 - Try using tunnel connection: `npx expo start --tunnel`
 - Check firewall settings aren't blocking connections
 
 **Environment variables not loading:**
+
 - Restart the development server after creating/modifying `.env` files
 - Verify `.env` file is in the correct directory
 - Check for typos in variable names
@@ -280,6 +298,7 @@ For detailed instructions on Git workflow, branching, pull requests, and resolvi
 **[Git & GitHub Workflow Guide](./helpful-docs/GITHUB.md)**
 
 Quick reminders:
+
 - Always work on your own branch: `git checkout -b your-name/your-feature`
 - Never commit directly to `main`
 - Sync with main regularly: `git merge main` or `git rebase main`
@@ -291,12 +310,14 @@ Quick reminders:
 ## Additional Resources
 
 **Project Guides:**
+
 - [Git & GitHub Workflow Guide](./helpful-docs/GITHUB.md)
 - [Supabase Authentication Guide](./helpful-docs/SUPABASE.md)
 - [MongoDB Operations Guide](./helpful-docs/MONGODB.md)
 - [NativeWind Styling Guide](./helpful-docs/NATIVEWIND.md)
 
 **External Documentation:**
+
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Expo Documentation](https://docs.expo.dev/)
 - [React Native Documentation](https://reactnative.dev/)
