@@ -29,8 +29,8 @@ export const useApi = () => {
 
             console.error(`An error occurred when requesting ${apiURL}${endpoint}.`)
             if (error instanceof Error) {
-                console.error(error.message || "An error occurred.");
-                return { "error": error.message || "An error occurred." }
+                console.error(error.name || "An error occurred.");
+                return { "error": error.name || "An error occurred." }
             }
             else if (typeof error == "string") {
                 console.error(error);

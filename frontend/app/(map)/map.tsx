@@ -72,6 +72,7 @@ export default function Map() {
             method: "GET"
         }).then((result) => {
             setMapData(result.resources);
+            // console.log(JSON.stringify(result, null, 4));
         });
 
     }, []);
