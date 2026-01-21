@@ -1,6 +1,6 @@
-import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { ActivityIndicator, View, Text, Pressable, Dimensions } from "react-native";
 import { useApi } from "@/lib/api";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MapComponent from "@/components/MapComponent";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -8,9 +8,11 @@ import Animated, { FadeIn, FadeOut, Easing, useSharedValue, useAnimatedStyle, wi
 import Slider from '@react-native-community/slider';
 import { TextInput } from "react-native";
 import { clamp, isOpen, time, day, getDistanceFromLatLon } from "@/lib/utils";
-import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, TouchableWithoutFeedback, PanResponder } from "react-native";
 import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
+import { ScrollView } from "react-native";
+import ResourceModal from "@/components/ResourceModal";
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
@@ -57,6 +59,51 @@ const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOth
         </Pressable>
     );
 
+}
+
+const TopPanel = ({ resources, location }: { resources: MapResource[], location: Location.LocationObject | null }) => {
+
+    const height = useSharedValue(30);
+    const opened = useRef<boolean>(false);
+    const style = useAnimatedStyle(() => ({
+        height: height.value
+    }));
+
+    const insets = useSafeAreaInsets();
+    const { height: screenHeight } = Dimensions.get("window");
+    const panelHeight = screenHeight - insets.bottom - 207;
+
+    const panResponser = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > Math.abs(gesture.dx),
+            onPanResponderMove: (_, gesture) => {
+                height.value = Math.max(30, Math.min((opened.current ? panelHeight : 0) + gesture.dy, panelHeight));
+            },
+            onPanResponderRelease: (_, gesture) => {
+                height.value = gesture.dy > 50 ? withSpring(panelHeight) : withSpring(30);
+                opened.current = gesture.dy > 50;
+            }
+        })
+    ).current;
+
+    return (
+        <Animated.View style={style} className="w-full bg-[#F8F8F8] absolute overflow-hidden top-[112%] z-10 rounded-b-[20px]">
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: "center", display: "flex" }}>
+                <View className="h-[10px]"/>
+                {
+                    resources.map((val, key) => (
+                        <View key={key} className="mb-[10px] mx-[10px]">
+                            <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
+                        </View>
+                    ))
+                }
+            </ScrollView>
+            <View {...panResponser.panHandlers} className="w-full mt-auto h-[30px] relative">
+                <Text className="text-[#00000033] font-lexend absolute left-1/2 -translate-x-1/2 text-[10px] bottom-[13px]">View results</Text>
+                <View className="h-[3px] w-[50px] bg-[#D9D9D9] absolute bottom-[7px] left-1/2 -translate-x-1/2"></View>
+            </View>
+        </Animated.View>
+    );
 }
 
 export default function Map() {
@@ -151,7 +198,7 @@ export default function Map() {
                                 </View>
                                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" />
                             </View>
-                            <View className="flex flex-row justify-between items-center mt-[10px] mr-[10px]">
+                            <View className="flex flex-row justify-between items-center mt-[6px] mr-[10px]">
                                 <Text className="ml-[12px] font-lexend-medium">Resources near you</Text>
                                 <View className="flex flex-row items-start">
                                     <Image source={require("../../assets/images/pin-fill.svg")} style={{ width: 24, height: 24, alignSelf: "flex-start" }} contentFit="contain" />
@@ -164,7 +211,7 @@ export default function Map() {
                                     </Pressable>
                                 </View>
                             </View>
-
+                            <TopPanel resources={filteredMapData} location={location}/>
                         </View>
                         <View>
                             {
@@ -172,7 +219,7 @@ export default function Map() {
                                     <Animated.View
                                         entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))}
                                         exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))}
-                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8]"
+                                        className="absolute top-0 left-0 right-0 h-[340px] z-30 bg-[#F8F8F8]"
                                     >
                                         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                                         <View style={{ paddingHorizontal: 40 }}>

@@ -24,7 +24,7 @@ const createRandomResource = (): MapResource => ({
     _id: uuid4(),
     latitude: randomRange(34, 37),
     longitude: -randomRange(85, 87),
-    name: `${capitalize(faker.word.adjective())} ${capitalize(faker.word.noun())}`,
+    name: faker.company.name(),
     phone: faker.phone.number({ style: 'national' }),
     address: faker.location.streetAddress(),
     id_required: Math.random() < 0.5,
