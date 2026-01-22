@@ -90,10 +90,12 @@ const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResourc
     return (
         <Animated.View style={style} className="w-full bg-[#F8F8F8] absolute overflow-hidden top-[112%] z-10 rounded-b-[20px]">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: "center", display: "flex" }}>
-                <View className="h-[10px]"/>
+                <View className="h-[22px]">
+                    <Text className="text-[#00000033] font-lexend text-[10px]">Press and hold on a organization to navigate to it</Text>
+                </View>
                 {
                     resources.map((val, key) => (
-                        <Pressable onPressIn={() => { if (val.latitude && val.longitude) setAnimateTo(val.longitude, val.latitude) }} key={key} className="mb-[10px] mx-[10px]">
+                        <Pressable onLongPress={() => { if (val.latitude && val.longitude) setAnimateTo(val.longitude, val.latitude) }} key={key} className="mb-[10px] mx-[10px]">
                             <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
                         </Pressable>
                     ))
