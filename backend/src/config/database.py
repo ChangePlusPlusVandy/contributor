@@ -11,10 +11,20 @@ mongo_key = os.getenv("MONGODB_URI")
 # Supabase initialization
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
+supabase_service_key = os.getenv("SUPABASE_SERVICE_KEY")
+
 if not supabase_url or not supabase_key:
     raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY")
 
+# Regular client for user auth operations
 supabase: Client = create_client(supabase_url, supabase_key)
+
+# Admin client for admin operations (Deleting users)
+# Uses regular key if service key's not in the .env
+supabase_admin: Client = create_client(
+    supabase_url,
+    supabase_service_key or supabase_key
+)
 
 class MongoDB:
     # client variable

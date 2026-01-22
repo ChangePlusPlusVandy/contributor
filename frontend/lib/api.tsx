@@ -23,19 +23,28 @@ export const useApi = () => {
         throw new Error(errorData?.detail || "An error occurred.");
       }
 
-      return await response.json();
-    } catch (error: unknown) {
-      console.error(`An error occurred when requesting ${apiURL}${endpoint}.`);
-      if (error instanceof Error) {
-        console.error(error.message || "An error occurred.");
-        return { error: error.message || "An error occurred." };
-      } else if (typeof error == "string") {
-        console.error(error);
-        return { error: error };
-      } else {
-        console.error("An unknown error occurred.");
-        return { error: "An unknown error occurred." };
-      }
+            return await response.json();
+
+        }
+        catch (error: unknown) {
+
+            console.error(`An error occurred when requesting ${apiURL}${endpoint}.`)
+            if (error instanceof Error) {
+                console.error(error.name || "An error occurred.");
+                return { "error": error.name || "An error occurred." }
+            }
+            else if (typeof error == "string") {
+                console.error(error);
+                return { "error": error }
+            }
+            else {
+                console.error("An unknown error occurred.");
+                return { "error": "An unknown error occurred." }
+            }
+
+
+        }
+
     }
   };
 

@@ -1,18 +1,22 @@
-import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { ActivityIndicator, View, Text, Pressable, Dimensions } from "react-native";
 import { useApi } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MapComponent from "@/components/MapComponent";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { FadeIn, FadeOut, Easing, useSharedValue, useAnimatedStyle, withSpring, interpolateColor, withTiming } from "react-native-reanimated";
 import Slider from '@react-native-community/slider';
 import { TextInput } from "react-native";
-import { clamp } from "@/lib/utils";
-import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import { clamp, isOpen, time, day, getDistanceFromLatLon } from "@/lib/utils";
+import { Keyboard, TouchableWithoutFeedback, PanResponder } from "react-native";
+import { useFocusEffect } from 'expo-router';
+import * as Location from 'expo-location';
+import { ScrollView } from "react-native";
+import ResourceModal from "@/components/ResourceModal";
 
-const FilterButton = ({ title, width, height, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, textSize?: number, onPress?: () => void }) => {
+const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
-    const color = useSharedValue<number>(0);
+    const color = useSharedValue<number>(isPressed ? 1 : 0);
     const scale = useSharedValue<number>(1);
     const scaleStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }]
@@ -33,7 +37,7 @@ const FilterButton = ({ title, width, height, textSize = 12, onPress = () => nul
     };
 
     return (
-        <Pressable onPress={() => { onPress?.(); toggleColor(); }} onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
+        <Pressable onPress={() => { onPress?.(); toggleColor(); toggleFilter?.(title as Categories); toggleOther?.(); }} onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
             <Animated.View
                 className={`flex justify-center items-center rounded-[5px] bg-white`}
                 style={[
@@ -57,31 +61,126 @@ const FilterButton = ({ title, width, height, textSize = 12, onPress = () => nul
 
 }
 
+const TopPanel = ({ resources, location }: { resources: MapResource[], location: Location.LocationObject | null }) => {
+
+    const height = useSharedValue(30);
+    const opened = useRef<boolean>(false);
+    const style = useAnimatedStyle(() => ({
+        height: height.value
+    }));
+
+    const insets = useSafeAreaInsets();
+    const { height: screenHeight } = Dimensions.get("window");
+    const panelHeight = screenHeight - insets.bottom - 207;
+
+    const panResponser = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > Math.abs(gesture.dx),
+            onPanResponderMove: (_, gesture) => {
+                height.value = Math.max(30, Math.min((opened.current ? panelHeight : 0) + gesture.dy, panelHeight));
+            },
+            onPanResponderRelease: (_, gesture) => {
+                height.value = gesture.dy > 50 ? withSpring(panelHeight) : withSpring(30);
+                opened.current = gesture.dy > 50;
+            }
+        })
+    ).current;
+
+    return (
+        <Animated.View style={style} className="w-full bg-[#F8F8F8] absolute overflow-hidden top-[112%] z-10 rounded-b-[20px]">
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: "center", display: "flex" }}>
+                <View className="h-[10px]"/>
+                {
+                    resources.map((val, key) => (
+                        <View key={key} className="mb-[10px] mx-[10px]">
+                            <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
+                        </View>
+                    ))
+                }
+            </ScrollView>
+            <View {...panResponser.panHandlers} className="w-full mt-auto h-[30px] relative">
+                <Text className="text-[#00000033] font-lexend absolute left-1/2 -translate-x-1/2 text-[10px] bottom-[13px]">View results</Text>
+                <View className="h-[3px] w-[50px] bg-[#D9D9D9] absolute bottom-[7px] left-1/2 -translate-x-1/2"></View>
+            </View>
+        </Animated.View>
+    );
+}
+
 export default function Map() {
 
     const { makeRequest } = useApi();
     const [mapData, setMapData] = useState<MapResource[] | undefined>(undefined);
+    const [filteredMapData, setFilteredMapData] = useState<MapResource[] | undefined>(undefined);
+    const json = require("../../mapData.json");
+    const insets = useSafeAreaInsets();
 
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [distance, setDistance] = useState<number>(20);
     const [distanceText, setDistanceText] = useState<string>("20");
+    const [filters, setFilters] = useState<Categories[]>([]);
+    const [idRequired, setIDRequired] = useState<boolean>(false);
+    const [openNow, setOpenNow] = useState<boolean>(false);
+    const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
     useEffect(() => {
         
-        makeRequest("resources/", {
-            method: "GET"
-        }).then((result) => {
-            setMapData(result.resources);
-        });
+        // makeRequest("resources/", {
+        //     method: "GET"
+        // }).then((result) => {
+        //     setMapData(result.resources);
+        //     // console.log(JSON.stringify(result, null, 4));
+        // });
+        setMapData(json);
 
     }, []);
 
-    const insets = useSafeAreaInsets();
+    useEffect(() => {
+        
+        if (!mapData) return;
+        if (!location?.coords) return;
+
+        const filtered = mapData?.filter(resource => {
+            return (filters.length !== 0 ? filters.includes(resource.category) : true) && (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance;
+        });
+        setFilteredMapData(filtered);
+        
+    }, [filters, idRequired, openNow, mapData, distance, location])
+
+    const toggleFilter = (category: Categories) => {
+        if (filters.includes(category)) {
+            setFilters(prev => prev.filter(v => v !== category));
+        }
+        else {
+            setFilters(prev => [...prev, category]);
+        }
+    }
+
+    useFocusEffect(
+
+        useCallback(() => {
+
+            async function getCurrentLocation() {
+
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    return;
+                }
+
+                let location = await Location.getCurrentPositionAsync({});
+                setLocation(location);
+
+            }
+
+            getCurrentLocation();
+
+        }, [])
+
+    );
 
     return (
         <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom - 10 }}>
             {
-                mapData === undefined ? (
+                filteredMapData === undefined ? (
                     <View className="h-full w-full flex justify-center items-center">
                         <ActivityIndicator size="large" color="black" className="relative -translate-y-10"/>
                     </View>
@@ -99,7 +198,7 @@ export default function Map() {
                                 </View>
                                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" />
                             </View>
-                            <View className="flex flex-row justify-between items-center mt-[10px] mr-[10px]">
+                            <View className="flex flex-row justify-between items-center mt-[6px] mr-[10px]">
                                 <Text className="ml-[12px] font-lexend-medium">Resources near you</Text>
                                 <View className="flex flex-row items-start">
                                     <Image source={require("../../assets/images/pin-fill.svg")} style={{ width: 24, height: 24, alignSelf: "flex-start" }} contentFit="contain" />
@@ -112,7 +211,7 @@ export default function Map() {
                                     </Pressable>
                                 </View>
                             </View>
-
+                            <TopPanel resources={filteredMapData} location={location}/>
                         </View>
                         <View>
                             {
@@ -120,65 +219,65 @@ export default function Map() {
                                     <Animated.View
                                         entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))}
                                         exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))}
-                                        className="absolute top-0 left-0 right-0 h-[340px] z-10 bg-[#F8F8F8]"
+                                        className="absolute top-0 left-0 right-0 h-[340px] z-30 bg-[#F8F8F8]"
                                     >
                                         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                                         <View style={{ paddingHorizontal: 40 }}>
-                                                <Text className="font-lexend-medium text-[14px]">Distance</Text>
-                                                <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
-                                                <Slider
-                                                    style={{ width: "auto", height: 35 }}
-                                                    minimumValue={1}
-                                                    maximumValue={100}
-                                                    value={distance}
-                                                    step={1}
-                                                    onValueChange={(value) => setDistance(value)}
-                                                />
-                                                <View className="flex flex-row justify-between items-center">
-                                                    <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
-                                                    <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">100</Text>
-                                                </View>
-                                                <View className="mt-[7px] bg-[#D9D9D9] w-full rounded-[5px] py-[6px] px-[8px]">
-                                                    <Text className="text-[#767676] font-lexend-medium text-[10px]">Enter distance (miles)</Text>
-                                                    <TextInput
-                                                        placeholder="1-100"
-                                                        keyboardType="numeric"
-                                                        value={distanceText}
-                                                        onChangeText={(text) => {
-                                                            setDistanceText(text);
-                                                            const num = Number(text);
-                                                            if (!isNaN(num)) {
-                                                                setDistance(clamp(Math.round(num), 1, 100));
-                                                            }
-                                                        }}
-                                                    />
-                                                </View>
-                                                <View className="mt-[7px] h-[26px] flex items-center flex-row">
-                                                    <Text className="font-lexend-medium text-[14px]">Filter</Text>
-                                                </View>
-                                                <View className="flex flex-row justify-between items-center mt-[8px]">
-                                                    <FilterButton title="Open Now" width={145} height={35}/>
-                                                    <FilterButton title="ID Not Required" width={145} height={35} />
-                                                </View>
-                                                <View className="mt-[7px] h-[26px] flex items-center flex-row">
-                                                    <Text className="font-lexend-medium text-[14px]">Category</Text>
-                                                </View>
-                                                <View className="flex flex-row justify-between items-center mt-[8px]">
-                                                    <FilterButton title="Urgent Needs" textSize={10} width={98} height={32} />
-                                                    <FilterButton title="Health & Wellness" textSize={10} width={98} height={32} />
-                                                    <FilterButton title="Family & Pets" textSize={10} width={98} height={32} />
-                                                </View>
-                                                <View className="flex flex-row justify-between items-center mt-[7px]">
-                                                    <FilterButton title="Specialized" textSize={10} width={98} height={32} />
-                                                    <FilterButton title="Help" textSize={10} width={98} height={32} />
-                                                    <FilterButton title="Find Work" textSize={10} width={98} height={32} />
-                                                </View>
+                                            <Text className="font-lexend-medium text-[14px]">Distance</Text>
+                                            <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
+                                            <Slider
+                                                style={{ width: "auto", height: 35 }}
+                                                minimumValue={1}
+                                                maximumValue={100}
+                                                value={distance}
+                                                step={1}
+                                                onValueChange={(value) => setDistance(value)}
+                                            />
+                                            <View className="flex flex-row justify-between items-center">
+                                                <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
+                                                <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">100</Text>
                                             </View>
+                                            <View className="mt-[7px] bg-[#D9D9D9] w-full rounded-[5px] py-[6px] px-[8px]">
+                                                <Text className="text-[#767676] font-lexend-medium text-[10px]">Enter distance (miles)</Text>
+                                                <TextInput
+                                                    placeholder="1-100"
+                                                    keyboardType="numeric"
+                                                    value={distanceText}
+                                                    onChangeText={(text) => {
+                                                        setDistanceText(text);
+                                                        const num = Number(text);
+                                                        if (!isNaN(num)) {
+                                                            setDistance(clamp(Math.round(num), 1, 100));
+                                                        }
+                                                    }}
+                                                />
+                                            </View>
+                                            <View className="mt-[7px] h-[26px] flex items-center flex-row">
+                                                <Text className="font-lexend-medium text-[14px]">Filter</Text>
+                                            </View>
+                                            <View className="flex flex-row justify-between items-center mt-[8px]">
+                                                <FilterButton title="Open Now" isPressed={openNow} toggleOther={() => setOpenNow(v => !v)} width={145} height={35}/>
+                                                <FilterButton title="ID Not Required" isPressed={idRequired} toggleOther={() => setIDRequired(v => !v)} width={145} height={35} />
+                                            </View>
+                                            <View className="mt-[7px] h-[26px] flex items-center flex-row">
+                                                <Text className="font-lexend-medium text-[14px]">Category</Text>
+                                            </View>
+                                            <View className="flex flex-row justify-between items-center mt-[8px]">
+                                                <FilterButton title="Urgent Needs" isPressed={filters.includes("Urgent Needs")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                                <FilterButton title="Health & Wellness" isPressed={filters.includes("Health & Wellness")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                                <FilterButton title="Family & Pets" isPressed={filters.includes("Family & Pets")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                            </View>
+                                            <View className="flex flex-row justify-between items-center mt-[7px]">
+                                                <FilterButton title="Specialized" isPressed={filters.includes("Specialized")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                                <FilterButton title="Help" isPressed={filters.includes("Help")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
+                                                <FilterButton title="Find Work" isPressed={filters.includes("Find Work")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
+                                            </View>
+                                        </View>
                                         </TouchableWithoutFeedback>
                                     </Animated.View>
                                 )
                             }
-                            <MapComponent mapData={mapData} />
+                            <MapComponent mapData={filteredMapData} location={location} />
                         </View>
                     </>
                 )
