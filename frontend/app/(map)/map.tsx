@@ -13,6 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { ScrollView } from "react-native";
 import ResourceModal from "@/components/ResourceModal";
+import debounce from "lodash.debounce"
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
@@ -61,7 +62,7 @@ const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOth
 
 }
 
-const TopPanel = ({ resources, location }: { resources: MapResource[], location: Location.LocationObject | null }) => {
+const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResource[], location: Location.LocationObject | null, setAnimateTo: (longitude: number, latitude: number) => void }) => {
 
     const height = useSharedValue(30);
     const opened = useRef<boolean>(false);
@@ -92,9 +93,9 @@ const TopPanel = ({ resources, location }: { resources: MapResource[], location:
                 <View className="h-[10px]"/>
                 {
                     resources.map((val, key) => (
-                        <View key={key} className="mb-[10px] mx-[10px]">
+                        <Pressable onPressIn={() => { if (val.latitude && val.longitude) setAnimateTo(val.longitude, val.latitude) }} key={key} className="mb-[10px] mx-[10px]">
                             <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
-                        </View>
+                        </Pressable>
                     ))
                 }
             </ScrollView>
@@ -121,6 +122,9 @@ export default function Map() {
     const [idRequired, setIDRequired] = useState<boolean>(false);
     const [openNow, setOpenNow] = useState<boolean>(false);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
+    const [animateTo, setAnimateTo] = useState<{ longitude: number, latitude: number } | null>(null);
+
+    const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 200), []);
 
     useEffect(() => {
         
@@ -211,7 +215,7 @@ export default function Map() {
                                     </Pressable>
                                 </View>
                             </View>
-                            <TopPanel resources={filteredMapData} location={location}/>
+                            <TopPanel resources={filteredMapData} location={location} setAnimateTo={(longitude, latitude) => setAnimateTo({ longitude, latitude })}/>
                         </View>
                         <View>
                             {
@@ -231,7 +235,7 @@ export default function Map() {
                                                 maximumValue={100}
                                                 value={distance}
                                                 step={1}
-                                                onValueChange={(value) => setDistance(value)}
+                                                onValueChange={(value) => onSliderChange(value)}
                                             />
                                             <View className="flex flex-row justify-between items-center">
                                                 <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
@@ -277,7 +281,7 @@ export default function Map() {
                                     </Animated.View>
                                 )
                             }
-                            <MapComponent mapData={filteredMapData} location={location} />
+                            <MapComponent mapData={filteredMapData} location={location} animateTo={animateTo}/>
                         </View>
                     </>
                 )

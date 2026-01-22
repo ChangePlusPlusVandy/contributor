@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import ResourceModal from './ResourceModal';
 
-export default function MapComponent({ mapData, location }: { mapData: MapResource[], location: Location.LocationObject | null }) {
+export default function MapComponent({ mapData, location, animateTo }: { mapData: MapResource[], location: Location.LocationObject | null, animateTo: { longitude: number, latitude: number } | null }) {
 
     const [hasCentered, setHasCentered] = useState<boolean>(false);
     const mapRef = useRef<MapView | null>(null);
@@ -15,7 +15,7 @@ export default function MapComponent({ mapData, location }: { mapData: MapResour
         if (location && !hasCentered) {
             mapRef.current?.animateToRegion(
                 {
-                    latitude: location.coords.latitude - 0.01,
+                    latitude: location.coords.latitude - 0.005,
                     longitude: location.coords.longitude,
                     latitudeDelta: 0.1,
                     longitudeDelta: 0.1,
@@ -26,6 +26,22 @@ export default function MapComponent({ mapData, location }: { mapData: MapResour
         }
 
     }, [location]);
+
+    useEffect(() => {
+
+        if (animateTo) {
+            mapRef.current?.animateToRegion(
+                {
+                    latitude: animateTo.latitude - 0.005,
+                    longitude: animateTo.longitude,
+                    latitudeDelta: 0.1,
+                    longitudeDelta: 0.1,
+                },
+                1000
+            );
+        }
+
+    }, [animateTo])
 
     return (
         <>
