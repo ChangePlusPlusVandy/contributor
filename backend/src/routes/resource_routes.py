@@ -46,7 +46,7 @@ async def route_get_resources(active: bool = True):
     logger.info("Fetching all active resources...")
     try:
         collection = get_resources_collection()
-        resources = await get_resources(collection, active)
+        resources = await get_resources(collection, active=active)
         logger.info(f"Successfully retrieved {len(resources.get('resources', []))} {'active ' if active else ''} resources.")
         return resources
     except Exception as e:
