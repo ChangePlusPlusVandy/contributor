@@ -46,7 +46,7 @@ async def route_get_resources(active: bool = True):
     logger.info("Fetching all active resources...")
     try:
         collection = get_resources_collection()
-        resources = await get_resources(collection, active=active)
+        resources = await get_resources(collection, active=active, check_removed=True)
         logger.info(f"Successfully retrieved {len(resources.get('resources', []))} {'active ' if active else ''} resources.")
         return resources
     except Exception as e:
@@ -254,3 +254,24 @@ async def route_deny_submission(submission_id: str):
     except Exception as e:
         logger.error(f"Error denying submission {submission_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to deny submission")
+
+    
+@router.get("/pending/")
+async def route_get_pending():
+    """
+    Get all items/requests in the pending collection.
+
+    Returns:
+        JSON object containing:
+            - success: whether the request succeeded
+            - items: list of items 
+    """
+    logger.info("Fetching all items in pending...")
+    try: 
+        pend_col = get_pending_collection()
+        items = await get_resources(pend_col, active=False, check_removed=False)
+        logger.info(f"Successfully retrieved {len(items.get('resources', []))} pending items.")
+        return items
+    except Exception as e:
+        logger.error(f"Error retrieving pending items: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve pending items")

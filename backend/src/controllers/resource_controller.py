@@ -24,7 +24,7 @@ from src.utils.utils import (
 from src.utils.email_notifications import send_submission_status_email 
 
 
-async def get_resources(collection, active: bool):
+async def get_resources(collection, active: bool, check_removed: bool):
     """
     Retrieve all resources from the database where "removed" is false.
 
@@ -42,7 +42,11 @@ async def get_resources(collection, active: bool):
         resources = []
         
         # find active/all resources depending on "active" boolean parameter
-        query = {"removed": False} if active else {}
+        if check_removed: 
+            query = {"removed": False} if active else {}
+        else:
+            query = {}
+            
         cursor = collection.find(query)
         
         # add all valid queries into list
