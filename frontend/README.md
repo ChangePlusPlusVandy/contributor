@@ -6,15 +6,36 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. Start the app
+2. Environment setup
 
-   ```bash
-   npx expo start
-   ```
+Before starting the app, you must create a local environment config file.
+
+Create the following file:
+
+```bash
+frontend/lib/env.ts
+```
+
+Add this content to it:
+
+```bash
+export const config: { API_URL: string | undefined } = {
+API_URL: "http://127.0.0.1:8000",
+};
+```
+
+⚠️ This file is intentionally not committed to git.
+If needed, use env.template.ts as a reference.
+
+3. Start the app
+
+```bash
+npx expo start
+```
 
 In the output, you'll find options to open the app in a
 
