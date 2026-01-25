@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 from opencage.geocoder import OpenCageGeocode
 from datetime import datetime, timezone
+from src.schemas.resource import (
+    Coordinates
+)
 
 load_dotenv()
 
@@ -16,19 +19,25 @@ def _geocode_address(address: str):
     else:
         return None
 
-def prepare_default_fields(address: str) -> dict:
-    """Returns default fields for new resources."""
-    # what if address is not there
-    if address is not None: 
-        lat_long = _geocode_address(address)
-    else:
-        lat_long = None
+def getCoordinatesObj(address_parts: list):
+    address_str = ", ".join(filter(None, address_parts)) if address_parts else None
     
+    lat_long = _geocode_address(address=address_str) if address_str else None
+
+    coordinates = (
+        Coordinates(latitude=lat_long["lat"], longitude=lat_long["lng"])
+        if lat_long else None
+    )
+
+    return coordinates
+
+def prepare_default_fields(address_parts: list) -> dict:
+    """Returns default fields for new resources."""
+
     return {
         "removed": False,
         "created_at": datetime.now(timezone.utc),
-        "latitude": lat_long["lat"] if lat_long is not None else None,
-        "longitude": lat_long["lng"] if lat_long is not None else None
+        "coordinates": getCoordinatesObj(address_parts=address_parts)
     }
 
 def extract_field_data(raw_data):
@@ -72,6 +81,7 @@ def extract_field_data(raw_data):
         'bus_line': raw_data.get('q28_busLine'),
         'hours': raw_data.get('q17_hoursOpen'),
         'services': raw_data.get('q18_services'),
+        'id_required': raw_data.get('q30_idRequired'),
         'requirements': raw_data.get('q19_requirements'),
         'app_process': raw_data.get('q20_appProcess'),
         'other': raw_data.get('q26_other'),
@@ -83,10 +93,14 @@ def extract_field_data(raw_data):
         'org_phones': raw_data.get('q13_orgPhones'),
         'org_email': raw_data.get('q16_orgEmail')
     }
+
+    print(f'optional field data before checking for empty/None: {optional_fields}')
     
     # Only add optional fields if they have values (not empty string or None)
     for key, value in optional_fields.items():
         if value:  # This filters out None and empty strings
             resource_data[key] = value
+
+    print(f"resource data after filtering: {resource_data}")
     
     return resource_data
