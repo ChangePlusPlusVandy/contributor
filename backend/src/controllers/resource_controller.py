@@ -24,7 +24,7 @@ from src.utils.utils import (
 from src.utils.email_notifications import send_submission_status_email 
 
 
-async def get_resources(collection, active: bool):
+async def get_resources(collection, active: bool, check_removed: bool):
     """
     Retrieve all resources from the database where "removed" is false.
 
@@ -42,7 +42,11 @@ async def get_resources(collection, active: bool):
         resources = []
         
         # find active/all resources depending on "active" boolean parameter
-        query = {"removed": False} if active else {}
+        if check_removed: 
+            query = {"removed": False} if active else {}
+        else:
+            query = {}
+            
         cursor = collection.find(query)
         
         # add all valid queries into list
@@ -144,8 +148,6 @@ async def update_resource(resource_id: str, updates: dict, collection):
             - 'modified_count' (int): Number of documents modified
     """
     try:
-        print("--- IN UPDATE CONTROLLER ---")
-
         if not updates:
             raise HTTPException(status_code=400, detail="No updates provided")
 
@@ -222,12 +224,7 @@ async def receive_form(request: Request, pending_collection, resource_collection
         raw_request_data = json.loads(raw_req_str)
         resource_data = extract_field_data(raw_request_data)
 
-        print(f"Extracted resource data: {resource_data}")
-
-
         if resource_data.get('add'):
-            print("----- ADDING RESOURCE -----")
-
             # simply add to the pending collection
             new_resource = PendingResource(
                 **resource_data,
@@ -241,9 +238,6 @@ async def receive_form(request: Request, pending_collection, resource_collection
                 "resource": new_resource.model_dump()
             }
         else:
-            print(f"----- EDITING RESOURCE -----")
-
-
             # find the existing resource - search by name
             existing = await resource_collection.find_one({"org_name": resource_data.get('org_name')})
 
@@ -304,8 +298,6 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
             resource_data = {k: v for k, v in pending.items()
                             if k not in excluded_fields}
 
-            print(f'resource data: {resource_data}')
-
             # New resource - create with all default fields
             if pending.get("address"):
                 address_parts = [
@@ -332,8 +324,6 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
             updates = {k: v for k, v in pending.items()
                        if k not in excluded_fields and v is not None}
             
-            print(" --- starting edit address enconding ---")
-            
             # If address is not None, then geocode address and find coordinates
             if pending.get("address"):
                 address_parts = [
@@ -345,8 +335,6 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
 
                 coords = getCoordinatesObj(address_parts=address_parts)
                 updates["coordinates"] = coords.model_dump()
-            
-            print(" --- finished address encoding ---")
             
             # If updated_name is not None, then set "name" as updated_name
             if pending.get("updated_name"):
