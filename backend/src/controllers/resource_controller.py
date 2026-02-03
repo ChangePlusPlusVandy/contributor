@@ -12,15 +12,19 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from src.schemas.resource import Resource
+from src.schemas.resource import (
+    Resource,
+    PendingResource
+)
 from src.utils.utils import (
+    getCoordinatesObj,
     prepare_default_fields,
     extract_field_data   
 )
 from src.utils.email_notifications import send_submission_status_email 
 
 
-async def get_resources(collection, active: bool):
+async def get_resources(collection, active: bool, check_removed: bool):
     """
     Retrieve all resources from the database where "removed" is false.
 
@@ -38,7 +42,11 @@ async def get_resources(collection, active: bool):
         resources = []
         
         # find active/all resources depending on "active" boolean parameter
-        query = {"removed": False} if active else {}
+        if check_removed: 
+            query = {"removed": False} if active else {}
+        else:
+            query = {}
+            
         cursor = collection.find(query)
         
         # add all valid queries into list
@@ -60,8 +68,7 @@ async def get_resources(collection, active: bool):
 
 async def create_resource(resource: Resource, collection):
     """
-    Create a resource and add it to the database. Before adding, set "removed" to false, add time
-    created, and geolocation information.
+    Create a resource and add it to the database.
 
     Args:
         resource (Resource): Pydantic Resource model
@@ -73,26 +80,8 @@ async def create_resource(resource: Resource, collection):
             - 'resource' (dict): Resource dict with added fields (described above)
     """
     try:
+
         resource_dict = resource.model_dump()
-
-        # only geocode if we have a street address (not just city/state/zip)
-        if resource_dict.get("address"):
-            # combine address fields into a single geocodable string
-            address_parts = [
-                resource_dict.get("address"),
-                resource_dict.get("city"),
-                resource_dict.get("state"),
-                resource_dict.get("zip_code")
-            ]
-            # filter out None/empty values and join with commas
-            address_str = ", ".join(filter(None, address_parts))
-        else:
-            # no street address provided - don't geocode to avoid incorrect coords
-            address_str = None
-        print(address_str)
-
-        # add necessary fields
-        resource_dict.update(prepare_default_fields(address_str))
 
         # insert resource into mongoDB
         result = await collection.insert_one(resource_dict)
@@ -231,31 +220,21 @@ async def receive_form(request: Request, pending_collection, resource_collection
         if not raw_req_str:
             raise HTTPException(status_code=400, detail="No rawRequest field in form data")
         
+        # convert to JSON
         raw_request_data = json.loads(raw_req_str)
-
         resource_data = extract_field_data(raw_request_data)
-
-        print(f"Extracted resource data: {resource_data}")
-
-        # create resource with form data
-        # new_resource = Resource(
-        #     **resource_data,
-        #     submitted_at=datetime.now(timezone.utc),
-        #     submitted_by=resource_data.get("name")
-        # )
 
         if resource_data.get('add'):
             # simply add to the pending collection
-            new_resource = Resource(
+            new_resource = PendingResource(
                 **resource_data,
-                submitted_at=datetime.now(timezone.utc),
-                submitted_by=resource_data.get("name")
+                submitted_at=datetime.now(timezone.utc)
             )
             result = await pending_collection.insert_one(new_resource.model_dump())
 
             return {
                 "success": True,
-                "message": "New resource submissino added to pending collection",
+                "message": "New resource submission added to pending collection",
                 "resource": new_resource.model_dump()
             }
         else:
@@ -263,11 +242,10 @@ async def receive_form(request: Request, pending_collection, resource_collection
             existing = await resource_collection.find_one({"org_name": resource_data.get('org_name')})
 
             if existing:
-                updated_resource = Resource(
+                updated_resource = PendingResource(
                     **resource_data,
                     original_resource_id=str(existing["_id"]),
-                    submitted_at=datetime.now(timezone.utc),
-                    submitted_by=resource_data.get("name")
+                    submitted_at=datetime.now(timezone.utc)
                 )
                 result = await pending_collection.insert_one(updated_resource.model_dump())
 
@@ -277,7 +255,8 @@ async def receive_form(request: Request, pending_collection, resource_collection
                     "resource": updated_resource.model_dump()
                 }
             else:
-                raise HTTPException(status_code=422, detail=f"Cannot update: No existing resource with org_name='{new_resource.org_name}'")
+                print(f"Error: no existing resource with org_name {resource_data.get('org_name')}")
+                raise HTTPException(status_code=422, detail=f"Cannot update: No existing resource with org_name='{resource_data.get('org_name')}'")
 
     except HTTPException:
         raise
@@ -312,23 +291,55 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
         to_email = pending.get("email")
         org_name = pending.get("org_name")
 
-        # remove metadata fields before creating/updating resource
-        resource_data = {k: v for k, v in pending.items()
-                        if k not in ["_id", "original_resource_id"]}
-
+        excluded_fields = {"_id", "add", "updated_name", "page", "original_resource_id", "submitted_at"}
+        
         if pending.get("add"):
-            # new resource - create with all default fields
-            resource = Resource(**resource_data)
+            # Remove metadata fields and fields specific to PendingResource model
+            resource_data = {k: v for k, v in pending.items()
+                            if k not in excluded_fields}
+
+            # New resource - create with all default fields
+            if pending.get("address"):
+                address_parts = [
+                    pending.get("address"),
+                    pending.get("city"),
+                    pending.get("state"),
+                    pending.get("zip_code")
+                ]
+            else:
+                address_parts = None
+
+            default_fields = prepare_default_fields(address_parts=address_parts)
+            
+            resource = Resource(**resource_data, **default_fields)
             result = await create_resource(resource, resource_collection)
             action = "created"
         else:
-            # update existing resource
+            # If not add, then update
+
             original_id = pending.get("original_resource_id")
             if not original_id:
                 raise HTTPException(status_code=400, detail="No original_resource_id for update")
+            
+            updates = {k: v for k, v in pending.items()
+                       if k not in excluded_fields and v is not None}
+            
+            # If address is not None, then geocode address and find coordinates
+            if pending.get("address"):
+                address_parts = [
+                    pending.get("address"),
+                    pending.get("city"),
+                    pending.get("state"),
+                    pending.get("zip_code")
+                ]
 
-            # remove 'add' field from updates
-            updates = {k: v for k, v in resource_data.items() if k != "add"}
+                coords = getCoordinatesObj(address_parts=address_parts)
+                updates["coordinates"] = coords.model_dump()
+            
+            # If updated_name is not None, then set "name" as updated_name
+            if pending.get("updated_name"):
+                updates["name"] = pending["updated_name"]
+
             result = await update_resource(original_id, updates, resource_collection)
             action = "updated"
 
