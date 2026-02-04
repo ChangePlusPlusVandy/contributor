@@ -125,8 +125,10 @@ export default function Map() {
     const [openNow, setOpenNow] = useState<boolean>(false);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [animateTo, setAnimateTo] = useState<{ longitude: number, latitude: number } | null>(null);
+    const [search, setSearch] = useState<string>("");
 
-    const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 200), []);
+    const onSearchChange = useCallback(debounce((val: string) => setSearch(val), 400), []);
+    const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
 
     useEffect(() => {
         
@@ -146,11 +148,14 @@ export default function Map() {
         if (!location?.coords) return;
 
         const filtered = mapData?.filter(resource => {
-            return (filters.length !== 0 ? filters.includes(resource.category) : true) && (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance;
+            return (filters.length !== 0 ? filters.includes(resource.category) : true) && 
+                   (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && 
+                   getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance &&
+                   (search !== "" ? resource.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) : true);
         });
         setFilteredMapData(filtered);
         
-    }, [filters, idRequired, openNow, mapData, distance, location])
+    }, [filters, idRequired, openNow, mapData, distance, location, search])
 
     const toggleFilter = (category: Categories) => {
         if (filters.includes(category)) {
@@ -183,6 +188,8 @@ export default function Map() {
 
     );
 
+
+
     return (
         <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom - 10 }}>
             {
@@ -199,7 +206,7 @@ export default function Map() {
                                 <View className="w-[278px] h-[33px] mr-[11px]">
                                     <View className=" bg-[#d9d9d980] rounded-[15px] w-full h-full flex flex-row items-center">
                                         <Image source={require("../../assets/images/search.svg")} style={{ width: 17, height: 17, marginLeft: 8 }} contentFit="contain" />
-                                        <Text className="text-[14px] font-lexend-medium text-[#00000059] ml-[6px]">Search resources</Text>
+                                        <TextInput onChangeText={(v) => onSearchChange(v)} className="text-[14px] font-lexend-medium text-[#00000059] ml-[6px] w-[85%]" placeholder="Search resources"></TextInput>
                                     </View>
                                 </View>
                                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" />
