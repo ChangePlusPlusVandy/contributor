@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { useAuth } from "@/providers/auth";
 
 const Resource = ({ resource }: { resource: Resource} ) => {
 
@@ -61,13 +62,11 @@ const ResourceSection = ({ title, resources }: { title: string, resources: Resou
 
 }
 
-
-export default function Home() {
-
+const UserHome = () => {
     return (
         <SafeAreaView className="bg-[#F8F8F8]">
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
-                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
+                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
                 <View>
                     <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
                     <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
@@ -93,4 +92,82 @@ export default function Home() {
             </ScrollView>
         </SafeAreaView>
     );
+}
+
+const AdminHome = () => {
+
+    const { user } = useAuth();
+
+    return (
+        <SafeAreaView className="bg-[#F8F8F8]">
+            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
+                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
+                <View>
+                    <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
+                    <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
+                </View>
+                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+            </View>
+            <ScrollView
+                contentContainerStyle={{ paddingBottom: 85 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View className="p-[10px] flex flex-row gap-3">
+                    <Text className="text-[29px] font-lexend-bold">Welcome Back,</Text> 
+                    <Text className="text-[29px] font-lexend-bold text-[#2B84E9]">{user?.name}</Text>
+                </View>
+                <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
+                    <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">2</Text> new resources awaitng for approval</Text>
+                </View>
+                <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
+                <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
+                <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />
+                <ResourceSection title="Specialized Assistance" resources={SPECIALIZED_RESOURCES} />
+                <ResourceSection title="Get Help" resources={GET_HELP_RESOURCES} />
+                <ResourceSection title="Find Work & Get Connected" resources={FIND_WORK_RESOURCES} />
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+const VendorHome = () => {
+    return (
+        <SafeAreaView className="bg-[#F8F8F8]">
+            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
+                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
+                <View>
+                    <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
+                    <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
+                </View>
+                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+            </View>
+            <ScrollView
+                contentContainerStyle={{ paddingBottom: 85 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3 mt-1.5">
+                    <View className="ml-[10px]">
+                        <Text className="font-lexend-bold text-[29px] text-[#2B84E9]">Middle Tennesse</Text>
+                        <Text className="font-lexend-bold text-[29px] text-[#2B84E9] -mt-1">Resource Directory</Text>
+                    </View>
+                </View>
+                <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
+                <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
+                <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />
+                <ResourceSection title="Specialized Assistance" resources={SPECIALIZED_RESOURCES} />
+                <ResourceSection title="Get Help" resources={GET_HELP_RESOURCES} />
+                <ResourceSection title="Find Work & Get Connected" resources={FIND_WORK_RESOURCES} />
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+export default function Home() {
+
+    const { user } = useAuth();
+
+    if (user?.role === "admin") return <AdminHome />;
+    if (user?.role === "vendor") return <VendorHome />;
+    return <UserHome />;
+
 }

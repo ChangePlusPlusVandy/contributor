@@ -145,12 +145,10 @@ export default function Map() {
     useEffect(() => {
         
         if (!mapData) return;
-        if (!location?.coords) return;
-
-        const filtered = mapData?.filter(resource => {
+        const filtered = mapData.filter(resource => {
             return (filters.length !== 0 ? filters.includes(resource.category) : true) && 
                    (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && 
-                   getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance &&
+                   (location ? getDistanceFromLatLon(location.coords.latitude, location.coords.longitude, resource.latitude, resource.longitude) <= distance : true) &&
                    (search !== "" ? resource.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) : true);
         });
         setFilteredMapData(filtered);

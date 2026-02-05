@@ -22,4 +22,16 @@ declare global {
         name: string
     }
 
+    type User = {
+        email: string,
+        name: string,
+        role: string
+    }
+    
+    type AuthStore = {
+        role: "admin" | "vendor",
+        accessToken: string,
+        refreshToken: string
+    }
+
 }
