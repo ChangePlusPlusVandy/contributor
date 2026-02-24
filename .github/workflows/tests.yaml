@@ -1,0 +1,33 @@
+name: Run Backend Tests
+
+on:
+  push:
+    branches: ["main", "resource-routes"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: uv sync
+
+      - name: Run tests
+        working-directory: ./backend
+        run: uv run pytest src/tests/ -v --tb=short
