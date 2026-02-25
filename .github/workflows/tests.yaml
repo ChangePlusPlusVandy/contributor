@@ -30,4 +30,9 @@ jobs:
 
       - name: Run tests
         working-directory: ./backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          OPENCAGE_API_KEY: ${{ secrets.OPENCAGE_API_KEY }}
         run: uv run pytest src/tests/resource_test.py -v --tb=short
