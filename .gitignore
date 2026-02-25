@@ -14,11 +14,6 @@ __pycache__/
 *$py.class
 *.so
 
-# Test files
-vendor_test.py
-admin_test.py
-resource_test.py
-
 # Distribution / packaging
 dist/
 build/

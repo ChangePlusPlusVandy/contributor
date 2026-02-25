@@ -13,6 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { ScrollView } from "react-native";
 import ResourceModal from "@/components/ResourceModal";
+import debounce from "lodash.debounce"
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
@@ -61,7 +62,7 @@ const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOth
 
 }
 
-const TopPanel = ({ resources, location }: { resources: MapResource[], location: Location.LocationObject | null }) => {
+const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResource[], location: Location.LocationObject | null, setAnimateTo: (longitude: number, latitude: number) => void }) => {
 
     const height = useSharedValue(30);
     const opened = useRef<boolean>(false);
@@ -89,12 +90,14 @@ const TopPanel = ({ resources, location }: { resources: MapResource[], location:
     return (
         <Animated.View style={style} className="w-full bg-[#F8F8F8] absolute overflow-hidden top-[112%] z-10 rounded-b-[20px]">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: "center", display: "flex" }}>
-                <View className="h-[10px]"/>
+                <View className="h-[22px]">
+                    <Text className="text-[#00000033] font-lexend text-[10px]">Press and hold on a organization to navigate to it</Text>
+                </View>
                 {
                     resources.map((val, key) => (
-                        <View key={key} className="mb-[10px] mx-[10px]">
+                        <Pressable onLongPress={() => { if (val.latitude && val.longitude) setAnimateTo(val.longitude, val.latitude) }} key={key} className="mb-[10px] mx-[10px]">
                             <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
-                        </View>
+                        </Pressable>
                     ))
                 }
             </ScrollView>
@@ -121,6 +124,11 @@ export default function Map() {
     const [idRequired, setIDRequired] = useState<boolean>(false);
     const [openNow, setOpenNow] = useState<boolean>(false);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
+    const [animateTo, setAnimateTo] = useState<{ longitude: number, latitude: number } | null>(null);
+    const [search, setSearch] = useState<string>("");
+
+    const onSearchChange = useCallback(debounce((val: string) => setSearch(val), 400), []);
+    const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
 
     useEffect(() => {
         
@@ -140,11 +148,14 @@ export default function Map() {
         if (!location?.coords) return;
 
         const filtered = mapData?.filter(resource => {
-            return (filters.length !== 0 ? filters.includes(resource.category) : true) && (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance;
+            return (filters.length !== 0 ? filters.includes(resource.category) : true) && 
+                   (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && 
+                   getDistanceFromLatLon(location?.coords.latitude, location?.coords.longitude, resource.latitude, resource.longitude) <= distance &&
+                   (search !== "" ? resource.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) : true);
         });
         setFilteredMapData(filtered);
         
-    }, [filters, idRequired, openNow, mapData, distance, location])
+    }, [filters, idRequired, openNow, mapData, distance, location, search])
 
     const toggleFilter = (category: Categories) => {
         if (filters.includes(category)) {
@@ -177,6 +188,8 @@ export default function Map() {
 
     );
 
+
+
     return (
         <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom - 10 }}>
             {
@@ -193,7 +206,7 @@ export default function Map() {
                                 <View className="w-[278px] h-[33px] mr-[11px]">
                                     <View className=" bg-[#d9d9d980] rounded-[15px] w-full h-full flex flex-row items-center">
                                         <Image source={require("../../assets/images/search.svg")} style={{ width: 17, height: 17, marginLeft: 8 }} contentFit="contain" />
-                                        <Text className="text-[14px] font-lexend-medium text-[#00000059] ml-[6px]">Search resources</Text>
+                                        <TextInput onChangeText={(v) => onSearchChange(v)} className="text-[14px] font-lexend-medium text-[#00000059] ml-[6px] w-[85%]" placeholder="Search resources"></TextInput>
                                     </View>
                                 </View>
                                 <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" />
@@ -211,7 +224,7 @@ export default function Map() {
                                     </Pressable>
                                 </View>
                             </View>
-                            <TopPanel resources={filteredMapData} location={location}/>
+                            <TopPanel resources={filteredMapData} location={location} setAnimateTo={(longitude, latitude) => setAnimateTo({ longitude, latitude })}/>
                         </View>
                         <View>
                             {
@@ -231,7 +244,7 @@ export default function Map() {
                                                 maximumValue={100}
                                                 value={distance}
                                                 step={1}
-                                                onValueChange={(value) => setDistance(value)}
+                                                onValueChange={(value) => onSliderChange(value)}
                                             />
                                             <View className="flex flex-row justify-between items-center">
                                                 <Text className="font-lexend-medium text-[10px] text-[#767676] -mt-[3px]">1</Text>
@@ -277,7 +290,7 @@ export default function Map() {
                                     </Animated.View>
                                 )
                             }
-                            <MapComponent mapData={filteredMapData} location={location} />
+                            <MapComponent mapData={filteredMapData} location={location} animateTo={animateTo}/>
                         </View>
                     </>
                 )
