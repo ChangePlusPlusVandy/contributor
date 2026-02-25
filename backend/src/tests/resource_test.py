@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 import sys
 import os
 import uuid
+import json
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,7 +24,6 @@ def unique_org_name():
 TEST_RESOURCE_NAME = "John Doe"
 TEST_RESOURCE_EMAIL = "john@test.com"
 TEST_RESOURCE_PHONE = 1234567890
-TEST_RESOURCE_ORG_NAME = "Test Organization"
 
 
 class TestGetResources:
@@ -73,6 +73,7 @@ class TestGetResources:
         assert data["success"] is True
         assert "resources" in data
         assert data["active"] is False
+        assert isinstance(data["resources"], list)
     
 
 class TestCreateResource:
@@ -90,7 +91,9 @@ class TestCreateResource:
                 "email": TEST_RESOURCE_EMAIL,
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
-                "add": True,
+                "category": "Urgent Needs",
+                "removed": False,
+                "created_at": "2024-01-01T00:00:00",
                 "address": "123 Test St",
                 "city": "Nashville",
                 "state": "TN",
@@ -106,47 +109,32 @@ class TestCreateResource:
         """
         UNSUCCESSFUL CREATION OF NEW RESOURCE WITH MISSING FIELDS
         """
-        response_no_add = client.post("/resources/",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "email": TEST_RESOURCE_EMAIL,
-                "phone": TEST_RESOURCE_PHONE,
-                "org_name": unique_org_name()
-            })
+        base = {
+            "name": TEST_RESOURCE_NAME,
+            "email": TEST_RESOURCE_EMAIL,
+            "phone": TEST_RESOURCE_PHONE,
+            "org_name": unique_org_name(),
+            "category": "Urgent Needs",
+            "removed": False,
+            "created_at": "2024-01-01T00:00:00",
+        }
+
+        response_no_category = client.post("/resources/",
+            json={k: v for k, v in base.items() if k != "category"})
 
         response_no_org = client.post("/resources/",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "email": TEST_RESOURCE_EMAIL,
-                "phone": TEST_RESOURCE_PHONE,
-                "add": True
-            })
+            json={k: v for k, v in base.items() if k != "org_name"})
 
         response_no_phone = client.post("/resources/",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "email": TEST_RESOURCE_EMAIL,
-                "org_name": unique_org_name(),
-                "add": True
-            })
-        
+            json={k: v for k, v in base.items() if k != "phone"})
+
         response_no_email = client.post("/resources/",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "phone": TEST_RESOURCE_PHONE,
-                "org_name": unique_org_name(),
-                "add": True
-            })
-        
+            json={k: v for k, v in base.items() if k != "email"})
+
         response_no_name = client.post("/resources/",
-            json={
-                "email": TEST_RESOURCE_EMAIL,
-                "phone": TEST_RESOURCE_PHONE,
-                "org_name": unique_org_name(),
-                "add": True
-            })
-        
-        assert response_no_add.status_code == 422
+            json={k: v for k, v in base.items() if k != "name"})
+
+        assert response_no_category.status_code == 422
         assert response_no_org.status_code == 422
         assert response_no_phone.status_code == 422
         assert response_no_email.status_code == 422
@@ -169,11 +157,13 @@ class TestGetOneResource:
                 "email": TEST_RESOURCE_EMAIL,
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
-                "add": True
+                "category": "Urgent Needs",
+                "removed": False,
+                "created_at": "2024-01-01T00:00:00",
             }
         )
         resource_id = create_response.json()["resource"]["_id"]
-        
+
         # Get by ID
         response = client.get(f"/resources/{resource_id}?search_by=id")
         
@@ -195,7 +185,9 @@ class TestGetOneResource:
                 "email": TEST_RESOURCE_EMAIL,
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": org_name,
-                "add": True
+                "category": "Urgent Needs",
+                "removed": False,
+                "created_at": "2024-01-01T00:00:00",
             }
         )
         
@@ -220,7 +212,7 @@ class TestGetOneResource:
         assert data_id["resource"] is None
 
         assert response_name.status_code == 200
-        data_name = response_id.json()
+        data_name = response_name.json()
         assert data_name["success"] is True
         assert data_name["resource"] is None
 
@@ -240,20 +232,22 @@ class TestUpdateResource:
                 "email": TEST_RESOURCE_EMAIL,
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
-                "add": True
+                "category": "Urgent Needs",
+                "removed": False,
+                "created_at": "2024-01-01T00:00:00",
             }
         )
         resource_id = create_response.json()["resource"]["_id"]
-        
+
         # Update it
         response = client.patch(f"/resources/{resource_id}",
             json={"email": "newemail@example.com", "phone": 33333333333}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["modified_count"] >= 0
+        assert data["modified_count"] == 1
     
     def test_update_nonexistent_resource(self, client):
         """
@@ -275,16 +269,19 @@ class TestFormSubmission:
         """
         SUCCESSFUL FORM SUBMISSION FOR NEW RESOURCE
         """
+        raw_request = {
+            "q5_yourName": {"first": "John", "last": "Doe"},
+            "q6_yourEmail": TEST_RESOURCE_EMAIL,
+            "q7_yourPhone": {"full": str(TEST_RESOURCE_PHONE)},
+            "q8_yourOrganization": unique_org_name(),
+            "q9_editOrAdd": "adding a new resource",
+            "q27_category": "Urgent Needs",
+        }
+
         response = client.post("/resources/form",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "email": TEST_RESOURCE_EMAIL,
-                "phone": TEST_RESOURCE_PHONE,
-                "org_name": unique_org_name(),
-                "add": True
-            }
+            data={"rawRequest": json.dumps(raw_request)}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -299,26 +296,25 @@ class TestApproveSubmission:
         """
         SUCCESSFUL APPROVAL OF NEW RESOURCE SUBMISSION
         """
-        # Submit form
         org_name = unique_org_name()
+        raw_request = {
+            "q5_yourName": {"first": "John", "last": "Doe"},
+            "q6_yourEmail": TEST_RESOURCE_EMAIL,
+            "q7_yourPhone": {"full": str(TEST_RESOURCE_PHONE)},
+            "q8_yourOrganization": org_name,
+            "q9_editOrAdd": "adding a new resource",
+            "q27_category": "Urgent Needs",
+        }
+
         form_response = client.post("/resources/form",
-            json={
-                "name": TEST_RESOURCE_NAME,
-                "email": TEST_RESOURCE_EMAIL,
-                "phone": TEST_RESOURCE_PHONE,
-                "org_name": org_name,
-                "add": True
-            }
+            data={"rawRequest": json.dumps(raw_request)}
         )
         assert form_response.status_code == 200
-        
-        # Get submission ID from pending collection
-        # (You'll need to query MongoDB directly or have an endpoint to list pending)
-        # For now, assuming we have the submission_id
-        
-        # response = client.post(f"/resources/pending/{submission_id}/approve")
-        # assert response.status_code == 200
-        # assert response.json()["action"] == "created"
+        submission_id = form_response.json()["resource"]["_id"]
+
+        response = client.post(f"/resources/pending/{submission_id}/approve")
+        assert response.status_code == 200
+        assert response.json()["action"] == "created"
     
     def test_approve_nonexistent_submission(self, client):
         """
@@ -337,8 +333,25 @@ class TestDenySubmission:
         """
         SUCCESSFUL DENIAL OF SUBMISSION
         """
-        # Similar to approve test - need submission_id
-        pass
+        org_name = unique_org_name()
+        raw_request = {
+            "q5_yourName": {"first": "John", "last": "Doe"},
+            "q6_yourEmail": TEST_RESOURCE_EMAIL,
+            "q7_yourPhone": {"full": str(TEST_RESOURCE_PHONE)},
+            "q8_yourOrganization": org_name,
+            "q9_editOrAdd": "adding a new resource",
+            "q27_category": "Urgent Needs",
+        }
+
+        form_response = client.post("/resources/form",
+            data={"rawRequest": json.dumps(raw_request)}
+        )
+        assert form_response.status_code == 200
+        submission_id = form_response.json()["resource"]["_id"]
+
+        response = client.post(f"/resources/pending/{submission_id}/deny")
+        assert response.status_code == 200
+        assert response.json()["success"] is True
     
     def test_deny_nonexistent_submission(self, client):
         """

@@ -235,7 +235,7 @@ async def receive_form(request: Request, pending_collection, resource_collection
             return {
                 "success": True,
                 "message": "New resource submission added to pending collection",
-                "resource": new_resource.model_dump()
+                "resource": {**new_resource.model_dump(), "_id": str(result.inserted_id)}
             }
         else:
             # find the existing resource - search by name
