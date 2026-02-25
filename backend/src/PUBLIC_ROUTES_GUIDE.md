@@ -144,6 +144,16 @@ This document lists the public-facing FastAPI routes with low-level examples.
 - **Description:** Fetches resource data from the Google Sheet, parses it,
   and returns a structured summary with the synced resources.
 
+### `GET /sync_and_seed`
+
+- **Function:** `sync_and_seed`
+- **Request body schema (inferred):** `None`
+- **Auth:** Unknown (check dependencies)
+- **Description:** Combines the behavior of `/sync_resources` and
+  `/resources/seed`.  The route downloads the current Google Sheet, then
+  upserts each row into MongoDB using `org_name` as the key.  Useful for a
+  one‑time sync at application startup or manual refresh.
+
 #### Example Response JSON
 
 ```json

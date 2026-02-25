@@ -178,28 +178,34 @@ async def seed_db(resources: List[dict], collection):
     old resources, etc.
 
     Returns a list of dicts, where each dict is a resource and status that indicates whether
-    the resource was updated or newly inserted into MongoDB.
+    the resource was updated or newly inserted into MongoDB.  Resources missing the
+    required `org_name` field are skipped and recorded with an error status; they do not
+    cause the entire operation to fail.
     """
 
     try:
-        # output list 
         results = []
 
-        # given: resources
         for resource in resources:
+            org = resource.get("org_name")
+            if not org:
+                # record but skip so one bad row doesn't abort everything
+                results.append({"org_name": org, "status": "error", "error": "missing org_name"})
+                continue
+
             result = await collection.update_one(
-                {"org_name": resource["org_name"]},
+                {"org_name": org},
                 {
                     "$set": resource,
-                    "$setOnInsert": prepare_default_fields() # TODO: see slack notes on seed_db
-                 },
-                upsert = True
+                    "$setOnInsert": prepare_default_fields()  # TODO: see slack notes on seed_db
+                },
+                upsert=True,
             )
 
             if result.matched_count > 0:
-                results.append({"org_name": resource["org_name"], "status": "updated"})
+                results.append({"org_name": org, "status": "updated"})
             else:
-                results.append({"org_name": resource["org_name"], "status": "inserted"})
+                results.append({"org_name": org, "status": "inserted"})
 
         return {"success": True, "results": results}
     except Exception as e:

@@ -7,6 +7,10 @@ import asyncio
 import json
 from src.config.logger import get_logger
 
+# DB helpers needed for combined sync/seed route
+from src.controllers.resource_controller import seed_db
+from src.config.database import get_resources_collection
+
 router = APIRouter()
 logger = get_logger(__name__)
 
@@ -49,7 +53,7 @@ async def sync_resources():
             "count": len(resources),
             "resources": resources,
         }
-
+    
     except httpx.RequestError as e:
         logger.error(f"HTTP request failed while fetching sheet: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail=f"Failed to fetch sheet: {str(e)}")
@@ -57,3 +61,44 @@ async def sync_resources():
     except Exception as e:
         logger.error(f"Error parsing or processing sheet data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Parsing error: {str(e)}")
+
+
+@router.get("/sync_and_seed")
+async def sync_and_seed():
+    """Fetch the Google Sheet and immediately upsert its contents into MongoDB.
+
+    This is essentially a convenience wrapper around :func:`sync_resources`
+    followed by :func:`seed_db`.  The returned JSON combines the results of
+    both operations.  Call once at startup or whenever you need the database
+    to mirror the sheet.
+    """
+    try:
+        # reuse the existing sync logic
+        sheet_result = await sync_resources()
+        resources = sheet_result.get("resources", [])
+
+        # temporarily do not filter or skip any rows; let seed_db decide
+        # how to handle missing org_name values. Uncomment the following block
+        # if you later want to drop those entries before seeding.
+        #
+        # bad = [r for r in resources if not r.get("org_name")]
+        # if bad:
+        #     logger.warning(f"Skipping {len(bad)} sheet row(s) missing org_name")
+        # resources = [r for r in resources if r.get("org_name")]
+
+        # seed the database with whatever we just fetched
+        collection = get_resources_collection()
+        seed_result = await seed_db(resources, collection)
+
+        return {
+            "sync": sheet_result,
+            "seed": seed_result,
+        }
+    except HTTPException:
+        # rethrow FastAPI-specific errors (e.g. bad sync)
+        raise
+    except Exception as e:
+        logger.error(f"Error during sync_and_seed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Sync and seed failed")
+
+    

@@ -259,6 +259,57 @@ class TestUpdateResource:
         
         assert response.status_code == 404
 
+
+class TestSyncAndSeed:
+    """
+    GET /sync_and_seed ENDPOINT
+    """
+    def test_sync_and_seed_with_mocked_sheet(self, client, monkeypatch):
+        """Ensure the route calls sync_resources and seeds the DB."""
+
+        sample_sheet = {
+            "status": "success",
+            "resources": [
+                {"org_name": "MockOrg1", "name": "Alpha"},
+                {"org_name": "MockOrg2", "name": "Beta"},
+            ],
+        }
+
+        async def fake_sync():
+            return sample_sheet
+
+        # monkeypatch the imported sync_resources used by the route
+        monkeypatch.setattr("src.utils.util_routes.sync_resources", fake_sync)
+
+        resp = client.get("/sync_and_seed")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["sync"] == sample_sheet
+        assert data["seed"]["success"] is True
+        assert len(data["seed"]["results"]) == len(sample_sheet["resources"])
+
+    def test_sync_and_seed_skips_bad_rows(self, client, monkeypatch):
+        """Rows missing org_name should be ignored and recorded."""
+        sample_sheet = {
+            "status": "success",
+            "resources": [
+                {"org_name": "GoodOrg", "name": "Yes"},
+                {"name": "NoOrg"},  # missing org_name
+            ],
+        }
+
+        async def fake_sync():
+            return sample_sheet
+        monkeypatch.setattr("src.utils.util_routes.sync_resources", fake_sync)
+
+        resp = client.get("/sync_and_seed")
+        assert resp.status_code == 200
+        data = resp.json()
+        # only one resource should be actually processed by seed
+        assert len(data["seed"]["results"]) == 2
+        # second entry should indicate error
+        assert data["seed"]["results"][1]["status"] == "error"
+
 # class TestSeedDB:
 
 class TestFormSubmission:
