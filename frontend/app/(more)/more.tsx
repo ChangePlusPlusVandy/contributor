@@ -1,230 +1,109 @@
+import { View, Text, Pressable, StyleProp, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
-import { useState } from "react";
-import { useApi } from "../../lib/api";
-import * as SecureStore from 'expo-secure-store';
-import { useAuth } from "@/providers/auth";
-import { useRouter, Href } from "expo-router";
+import { Image } from "expo-image";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { ReactNode } from "react";
 
-export default function More() {
-    const { makeRequest } = useApi();
+const Button = ({ children }: { children: ReactNode } ) => {
 
-    const [showAdmin, setShowAdmin] = useState(false);
-    const [showVendor, setShowVendor] = useState(false);
-
-    const [adminEmail, setAdminEmail] = useState("");
-    const [adminPass, setAdminPass] = useState("");
-    const [adminMessage, setAdminMessage] = useState("");
-    const [adminMessageColor, setAdminMessageColor] = useState("#dc2626");
-
-    const [vendorId, setVendorId] = useState("");
-    const [vendorPass, setVendorPass] = useState("");
-    const [vendorMessage, setVendorMessage] = useState("");
-    const [vendorMessageColor, setVendorMessageColor] = useState("#dc2626");
-    const [vendorSetPasswordMode, setVendorSetPasswordMode] = useState(false);
-    const [vendorNewPassword, setVendorNewPassword] = useState("");
-
-    const { setUser } = useAuth();
-    const router = useRouter();
-
-    const loginAdmin = async () => {
-        try {
-            setAdminMessage("");
-            const res = await makeRequest("admin/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: adminEmail, password: adminPass }),
-            });
-            if ((res as any).error) {
-                const msg = (res as any).error || (res as any).detail || JSON.stringify(res);
-                setAdminMessage(msg);
-                setAdminMessageColor("#dc2626");
-            } else if ((res as any).access_token) {
-                setAdminMessage("Successfully logged in");
-                setAdminMessageColor("#16a34a");
-                setAdminPass("");
-                await SecureStore.setItemAsync("auth", JSON.stringify({ role: "admin", accessToken: res.access_token, refreshToken: res.refresh_token }))
-                setUser({ email: res.admin.email, name: res.admin.name, role: "admin" });
-                router.navigate("/(home)" as Href);
-            } else {
-                const msg = JSON.stringify(res);
-                setAdminMessage(msg);
-                setAdminMessageColor("#dc2626");
-            }
-        } catch (e) {
-            setAdminMessage(String(e));
-            setAdminMessageColor("#dc2626");
-        }
-    };
-
-    const loginVendor = async () => {
-        try {
-            setVendorMessage("");
-            const res = await makeRequest("auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ vendor_id: vendorId, password: vendorPass }),
-            });
-            if ((res as any).error) {
-                const msg = (res as any).error || (res as any).detail || JSON.stringify(res);
-                setVendorMessage(msg);
-                setVendorMessageColor("#dc2626");
-            } else if ((res as any).password_required) {
-                setVendorMessage("Password required — set your password below");
-                setVendorMessageColor("#dc2626");
-                setVendorSetPasswordMode(true);
-                setVendorNewPassword("");
-            } else if ((res as any).access_token) {
-                setVendorMessage("Successfully logged in");
-                setVendorMessageColor("#16a34a");
-                setVendorPass("");
-                setVendorSetPasswordMode(false);
-                await SecureStore.setItemAsync("auth", JSON.stringify({ role: "vendor", accessToken: res.access_token, refreshToken: res.refresh_token }))
-                setUser({ email: res.vendor.email, name: res.vendor.name, role: "vendor" });
-                router.navigate("/(home)" as Href);
-            } else {
-                setVendorMessage(JSON.stringify(res));
-                setVendorMessageColor("#dc2626");
-            }
-        } catch (e) {
-            setVendorMessage(String(e));
-            setVendorMessageColor("#dc2626");
-        }
-    };
-
-    const submitVendorSetPassword = async () => {
-        try {
-            setVendorMessage("");
-            const res = await makeRequest("auth/set-password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ vendor_id: vendorId, password: vendorNewPassword }),
-            });
-            if ((res as any).error) {
-                const msg = (res as any).error || (res as any).detail || JSON.stringify(res);
-                setVendorMessage(msg);
-                setVendorMessageColor("#dc2626");
-            } else if ((res as any).access_token) {
-                setVendorMessage("Password set and logged in");
-                setVendorMessageColor("#16a34a");
-                setVendorSetPasswordMode(false);
-                setVendorPass("");
-                setVendorNewPassword("");
-                router.navigate("/(home)" as Href);
-            } else {
-                setVendorMessage(JSON.stringify(res));
-                setVendorMessageColor("#dc2626");
-            }
-        } catch (e) {
-            setVendorMessage(String(e));
-            setVendorMessageColor("#dc2626");
-        }
-    };
+    const scale = useSharedValue<number>(1);
+    const style = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }]
+    }));
 
     return (
-        <SafeAreaView style={{ flex: 1, padding: 16, backgroundColor: '#ffffff' }}>
-            <View>
-                <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 12 }}>More</Text>
+        <Pressable onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
+            <Animated.View style={style}>
+                {children}
+            </Animated.View>
+        </Pressable>
+    );
 
-                <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel="Login as Admin"
-                    testID="login-admin-btn"
-                    activeOpacity={0.8}
-                    style={{ backgroundColor: '#2563eb', padding: 12, borderRadius: 8, marginBottom: 12 }}
-                    onPress={() => setShowAdmin((s) => !s)}
-                >
-                    <Text style={{ color: '#fff', textAlign: 'center' }}>Login as Admin</Text>
-                </TouchableOpacity>
+}
 
-                {showAdmin ? (
-                    <View style={{ marginBottom: 16 }}>
-                        <TextInput
-                            placeholder="admin email"
-                            value={adminEmail}
-                            onChangeText={setAdminEmail}
-                            autoCapitalize="none"
-                            style={{ borderWidth: 1, borderColor: '#ddd', padding: 8, marginBottom: 8, borderRadius: 6 }}
-                        />
-                        <TextInput
-                            placeholder="password"
-                            value={adminPass}
-                            onChangeText={setAdminPass}
-                            secureTextEntry
-                            style={{ borderWidth: 1, borderColor: '#ddd', padding: 8, marginBottom: 8, borderRadius: 6 }}
-                        />
-                        <TouchableOpacity
-                            style={{ backgroundColor: '#1d4ed8', padding: 10, borderRadius: 6 }}
-                            onPress={loginAdmin}
-                        >
-                            <Text style={{ color: '#fff', textAlign: 'center' }}>Submit Admin Login</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : null}
 
-                <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel="Login as Vendor"
-                    testID="login-vendor-btn"
-                    activeOpacity={0.8}
-                    style={{ backgroundColor: '#059669', padding: 12, borderRadius: 8, marginBottom: 12 }}
-                    onPress={() => setShowVendor((s) => !s)}
-                >
-                    <Text style={{ color: '#fff', textAlign: 'center' }}>Login as Vendor</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel="Logout"
-                    testID="login-vendor-btn"
-                    activeOpacity={0.8}
-                    style={{ backgroundColor: '#ec4b49ff', padding: 12, borderRadius: 8, marginBottom: 12 }}
-                    onPress={() => { setUser(null); SecureStore.deleteItemAsync("auth"); router.navigate("/(home)" as Href); }}
-                >
-                    <Text style={{ color: '#fff', textAlign: 'center' }}>Logout</Text>
-                </TouchableOpacity>
-
-                {showVendor ? (
-                    <View style={{ marginTop: 12 }}>
-                        <TextInput
-                            placeholder="vendor id"
-                            value={vendorId}
-                            onChangeText={setVendorId}
-                            autoCapitalize="none"
-                            style={{ borderWidth: 1, borderColor: '#ddd', padding: 8, marginBottom: 8, borderRadius: 6 }}
-                        />
-                        <TextInput
-                            placeholder="password"
-                            value={vendorPass}
-                            onChangeText={setVendorPass}
-                            secureTextEntry
-                            style={{ borderWidth: 1, borderColor: '#ddd', padding: 8, marginBottom: 8, borderRadius: 6 }}
-                        />
-                        <TouchableOpacity
-                            style={{ backgroundColor: '#047857', padding: 10, borderRadius: 6 }}
-                            onPress={loginVendor}
-                        >
-                            <Text style={{ color: '#fff', textAlign: 'center' }}>Submit Vendor Login</Text>
-                        </TouchableOpacity>
-                        {vendorSetPasswordMode ? (
-                            <View style={{ marginTop: 12 }}>
-                                <TextInput
-                                    placeholder="Set new password"
-                                    value={vendorNewPassword}
-                                    onChangeText={setVendorNewPassword}
-                                    secureTextEntry
-                                    style={{ borderWidth: 1, borderColor: '#ddd', padding: 8, marginBottom: 8, borderRadius: 6 }}
-                                />
-                                <TouchableOpacity
-                                    style={{ backgroundColor: '#065f46', padding: 10, borderRadius: 6 }}
-                                    onPress={submitVendorSetPassword}
-                                >
-                                    <Text style={{ color: '#fff', textAlign: 'center' }}>Set Password & Login</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : null}
-                    </View>
-                ) : null}
+export default function More() {
+    
+    return (
+        <SafeAreaView>
+            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
+                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
+                <View>
+                    <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
+                    <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
+                </View>
+                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
             </View>
+            <View className="pt-[16px] px-[24px]">
+                <Text className="font-lexend-semibold text-[18px] mb-[10px]">Login</Text>
+                <View className="flex flex-row items-center">
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                        <Button>
+                            <View className="h-[164px] bg-white rounded-[5px] flex flex-col items-center justify-center" style={{
+                                shadowColor: "#000",
+                                shadowOffset: { width: 2, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4
+                            }}>
+                                <Image source={require("../../assets/images/more-page/stand.png")} style={{ aspectRatio: "1/1", height: 75, marginBottom: 18 }} contentFit="contain"/>
+                                <Text className="font-lexend-bold text-[18px]">Vendor Login</Text>
+                            </View>
+                        </Button>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Button>
+                            <View className="h-[164px] bg-white rounded-[5px] flex flex-col items-center justify-center" style={{
+                                shadowColor: "#000",
+                                shadowOffset: { width: 2, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4
+                            }}>
+                                <Image source={require("../../assets/images/more-page/computer.png")} style={{ aspectRatio: "1/1", height: 75, marginBottom: 18 }} contentFit="contain" />
+                                <Text className="font-lexend-bold text-[18px]">Admin Login</Text>
+                            </View>
+                        </Button>
+                    </View>
+                </View>
+                <Text className="font-lexend-semibold text-[18px] mt-[18px] mb-[10px]">Request Printed Guide</Text>
+                <View className="flex flex-row items-center">
+                    <View style={{ flex: 1 }}>
+                        <Button>
+                            <View className="h-[135px] bg-white rounded-[5px] gap flex flex-row items-center justify-center" style={{
+                                shadowColor: "#000",
+                                shadowOffset: { width: 2, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                                gap: 27
+                            }}>
+                                <Image source={require("../../assets/images/more-page/book.png")} style={{ aspectRatio: "1/1", height: 75, marginBottom: 18, position: "relative", transform: [{translateY: 8}] }} contentFit="contain" />
+                                <Text className="text-[14px] font-lexend-medium opacity-60 text-[14px] max-w-[196px] w-full">We are working on a version for 2026. Request to be notified when those are ready to pick up.</Text>
+                            </View>
+                        </Button>
+                    </View>
+                </View>
+                <Text className="font-lexend-semibold text-[18px] mt-[18px] mb-[10px]">Register a Resource</Text>
+                <View className="flex flex-row items-center">
+                    <View style={{ flex: 1 }}>
+                        <Button>
+                            <View className="h-[135px] bg-white rounded-[5px] gap flex flex-row items-center justify-center" style={{
+                                shadowColor: "#000",
+                                shadowOffset: { width: 2, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                                gap: 27
+                            }}>
+                                <Image source={require("../../assets/images/more-page/food.png")} style={{ aspectRatio: "1/1", height: 75, marginBottom: 18 }} contentFit="contain" />
+                                <Text className="font-lexend-medium opacity-60 text-[13px] max-w-[196px] w-full">Apply to register a resource or to update an existing entry.</Text>
+                            </View>
+                        </Button>
+                    </View>
+                </View>
+            </View>
+
         </SafeAreaView>
     );
 }

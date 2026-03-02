@@ -1,6 +1,6 @@
 import { ActivityIndicator, View, Text, Pressable, Dimensions } from "react-native";
 import { useApi } from "@/lib/api";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapComponent from "@/components/MapComponent";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -14,6 +14,15 @@ import * as Location from 'expo-location';
 import { ScrollView } from "react-native";
 import ResourceModal from "@/components/ResourceModal";
 import debounce from "lodash.debounce"
+
+const CATEGORY_SUBCATEGORIES: Record<Categories, string[]> = {
+    "Urgent Needs": ["Food", "Personal Care", "Emergency Shelter", "Housing", "Rent + Utilities Assistance"],
+    "Health & Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes & Hospice", "Dental + Hearing", "HIV PrEP, & HEP C"],
+    "Family & Pets": ["Tutoring & Mentoring", "Childcare", "Family Support", "Pet Help"],
+    "Specialized": ["Tutoring & Mentoring", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated"],
+    "Help": ["Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "Identification", "Outside Davidson Country", "Phones"],
+    "Find Work": ["Jobs + Training", "Adult Education", "Arts", "Transportation"],
+};
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
@@ -113,7 +122,6 @@ export default function Map() {
 
     const { makeRequest } = useApi();
     const [mapData, setMapData] = useState<MapResource[] | undefined>(undefined);
-    const [filteredMapData, setFilteredMapData] = useState<MapResource[] | undefined>(undefined);
     const json = require("../../mapData.json");
     const insets = useSafeAreaInsets();
 
@@ -121,6 +129,7 @@ export default function Map() {
     const [distance, setDistance] = useState<number>(20);
     const [distanceText, setDistanceText] = useState<string>("20");
     const [filters, setFilters] = useState<Categories[]>([]);
+    const [subcategoryFilters, setSubcategoryFilters] = useState<string[]>([]);
     const [idRequired, setIDRequired] = useState<boolean>(false);
     const [openNow, setOpenNow] = useState<boolean>(false);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -142,25 +151,55 @@ export default function Map() {
 
     }, []);
 
-    useEffect(() => {
-        
-        if (!mapData) return;
-        const filtered = mapData.filter(resource => {
-            return (filters.length !== 0 ? filters.includes(resource.category) : true) && 
-                   (idRequired ? !resource.id_required : true) && (openNow ? isOpen(resource.hours, day, time) : true) && 
-                   (location ? getDistanceFromLatLon(location.coords.latitude, location.coords.longitude, resource.latitude, resource.longitude) <= distance : true) &&
-                   (search !== "" ? resource.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) : true);
+    const filteredMapData = useMemo(() => {
+        if (!mapData) return [];
+
+        const activeSubcategoriesByCategory: Partial<Record<Categories, string[]>> = {};
+        for (const category of filters) {
+            const subs = subcategoryFilters.filter(s => CATEGORY_SUBCATEGORIES[category].includes(s));
+            if (subs.length > 0) {
+                activeSubcategoriesByCategory[category] = subs;
+            }
+        }
+
+        return mapData.filter(resource => {
+            const categoryMatch = filters.length !== 0 ? filters.includes(resource.category) : true;
+
+            let subcategoryMatch = true;
+            const activeSubs = activeSubcategoriesByCategory[resource.category];
+            if (activeSubs && activeSubs.length > 0) {
+                subcategoryMatch = activeSubs.some(sub =>
+                    resource.name.toLowerCase().includes(sub.toLowerCase())
+                );
+            }
+
+            return categoryMatch &&
+                subcategoryMatch &&
+                (idRequired ? !resource.id_required : true) &&
+                (openNow ? isOpen(resource.hours, day, time) : true) &&
+                (search !== ""
+                    ? resource.name.toLowerCase().includes(search.toLowerCase())
+                    : true);
         });
-        setFilteredMapData(filtered);
-        
-    }, [filters, idRequired, openNow, mapData, distance, location, search])
+    }, [filters, subcategoryFilters, idRequired, openNow, mapData, search, day, time]);
 
     const toggleFilter = (category: Categories) => {
         if (filters.includes(category)) {
             setFilters(prev => prev.filter(v => v !== category));
+            const subs = CATEGORY_SUBCATEGORIES[category];
+            setSubcategoryFilters(prev => prev.filter(v => !subs.includes(v)));
         }
         else {
             setFilters(prev => [...prev, category]);
+        }
+    }
+
+    const toggleSubcategory = (subcategory: string) => {
+        if (subcategoryFilters.includes(subcategory)) {
+            setSubcategoryFilters(prev => prev.filter(v => v !== subcategory));
+        }
+        else {
+            setSubcategoryFilters(prev => [...prev, subcategory]);
         }
     }
 
@@ -230,10 +269,11 @@ export default function Map() {
                                     <Animated.View
                                         entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))}
                                         exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))}
-                                        className="absolute top-0 left-0 right-0 h-[340px] z-30 bg-[#F8F8F8]"
+                                        className="absolute top-0 left-0 right-0 z-30 bg-[#F8F8F8]"
+                                        style={{ maxHeight: Dimensions.get("window").height * 0.65 }}
                                     >
                                         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                                        <View style={{ paddingHorizontal: 40 }}>
+                                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 40, paddingBottom: 20 }}>
                                             <Text className="font-lexend-medium text-[14px]">Distance</Text>
                                             <Text className="font-lexend-medium text-[10px] text-[#767676]">Only show me resources within a specific distance</Text>
                                             <Slider
@@ -283,7 +323,34 @@ export default function Map() {
                                                 <FilterButton title="Help" isPressed={filters.includes("Help")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
                                                 <FilterButton title="Find Work" isPressed={filters.includes("Find Work")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
                                             </View>
-                                        </View>
+                                            {filters.length > 0 && (
+                                                <View className="mt-[12px]">
+                                                    <Text className="font-lexend-medium text-[14px] mb-[8px]">Subcategory</Text>
+                                                    {filters.map((category) => (
+                                                        <Animated.View
+                                                            key={category}
+                                                            entering={FadeIn.duration(200)}
+                                                            exiting={FadeOut.duration(200)}
+                                                            className="mb-[10px]"
+                                                        >
+                                                            <View className="flex flex-row flex-wrap" style={{ gap: 7 }}>
+                                                                {CATEGORY_SUBCATEGORIES[category].map((sub) => (
+                                                                    <FilterButton
+                                                                        key={`${category}-${sub}`}
+                                                                        title={sub}
+                                                                        isPressed={subcategoryFilters.includes(sub)}
+                                                                        toggleOther={() => toggleSubcategory(sub)}
+                                                                        textSize={9}
+                                                                        width={98}
+                                                                        height={28}
+                                                                    />
+                                                                ))}
+                                                            </View>
+                                                        </Animated.View>
+                                                    ))}
+                                                </View>
+                                            )}
+                                        </ScrollView>
                                         </TouchableWithoutFeedback>
                                     </Animated.View>
                                 )

@@ -17,6 +17,7 @@ from src.admin_auth.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
 from src.routes.resource_helper_routes import router as resource_helper_router
 from src.routes.messaging_routes import router as messaging_router
+from src.routes.analytics import router as analytics_router
 
 logger = get_logger(__name__)
 
@@ -39,6 +40,7 @@ app.include_router(util_routes)
 app.include_router(resource_router)
 app.include_router(messaging_router)
 app.include_router(resource_helper_router)
+app.include_router(analytics_router)
 
 @app.get("/")
 def root():
