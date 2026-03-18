@@ -25,18 +25,6 @@ async def lifespan(app: FastAPI):
     # connect to MongoDB, initialize client
     await MongoDB.connect_db()
 
-    # perform an initial sync from the Google Sheet so the database is
-    # populated before the first request arrives.  If the sheet is down or
-    # the seed fails we log an error but allow the server to start anyway.
-    try:
-        from src.utils.util_routes import sync_and_seed
-
-        logger.info("Running startup sync_and_seed")
-        await sync_and_seed()
-        logger.info("Startup sync_and_seed completed")
-    except Exception as e:  # pragma: no cover - best effort only
-        logger.error(f"Startup sync/seed failed: {e}", exc_info=True)
-
     # stop here until server shuts down
     yield
 
