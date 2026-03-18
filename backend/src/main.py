@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from src.config.database import MongoDB
 from src.config.logger import get_logger
 
-from src.vendor_auth.routes import router
+from src.vendor_auth.routes import router, vendor_public_router
 from src.utils.util_routes import router as util_routes
 from src.admin_auth.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
@@ -35,6 +35,7 @@ app = FastAPI(lifespan = lifespan)
 
 app.include_router(admin_router)
 app.include_router(router)
+app.include_router(vendor_public_router)
 app.include_router(util_routes)
 app.include_router(resource_router)
 app.include_router(messaging_router)

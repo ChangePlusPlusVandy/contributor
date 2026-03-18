@@ -1,8 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Literal
-
-
-# VENDOR SCHEMAS
+from datetime import datetime
 
 class VendorLoginRequest(BaseModel):
     vendor_id: str = Field(..., min_length=4, max_length=4)
@@ -17,12 +15,15 @@ class VendorSetPasswordRequest(BaseModel):
 
 
 class VendorCreateRequest(BaseModel):
-    """Used by admin to pre-register a vendor"""
     vendor_id: str = Field(..., min_length=4, max_length=4)
     name: str
 
 
-# ADMIN SCHEMAS
+class VendorClockInRequest(BaseModel):
+    latitude: float | None = None
+    longitude: float | None = None
+
+
 
 class AdminRegisterRequest(BaseModel):
     email: str
@@ -35,14 +36,13 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 
-# MONGO SCHEMAS
-
 class MongoVendor(BaseModel):
     supabase_id: str | None = None
     vendor_id: str
     name: str
     role: Literal["vendor"] = "vendor"
     password_set: bool = False
+    is_clocked_in: bool = False
 
 
 class MongoAdmin(BaseModel):
