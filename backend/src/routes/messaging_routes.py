@@ -81,14 +81,14 @@ async def get_messages(conversation_id: str, supabase_user=Depends(verify_token)
 
         return [
             {
-                "id": str(m["_id"]),
-                "conversation_id": m["conversation_id"],
-                "sender_id": m["sender_id"],
-                "sender_name": m["sender_name"],
-                "content": m["content"],
-                "timestamp": m["timestamp"]
+                "id": str(message["_id"]),
+                "conversation_id": message["conversation_id"],
+                "sender_id": message["sender_id"],
+                "sender_name": message["sender_name"],
+                "content": message["content"],
+                "timestamp": message["timestamp"]
             }
-            for m in messages
+            for message in messages
         ]
     except HTTPException:
         raise
