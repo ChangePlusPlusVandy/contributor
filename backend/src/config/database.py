@@ -96,3 +96,9 @@ def get_admin_collection():
 def get_pending_collection():
     """Get the "pending" collection in the "the-contributor" database."""
     return MongoDB.get_collection("pending", "the-contributor")
+
+def get_messages_collection():
+    return MongoDB.get_collection("messages", "the-contributor")
+
+def get_conversations_collection():
+    return MongoDB.get_collection("conversations", "the-contributor")

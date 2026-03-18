@@ -290,30 +290,28 @@ async def get_all_users(current_user: dict = Depends(get_current_user)):
 async def clock_in_vendor(data: VendorClockInRequest, current_user: dict = Depends(get_current_user)):
     try:
         collection = get_vendor_users_collection()
-        supabaseid = current_user.get("supabase_id")
-
-        user = await collection.find_one({"supabase_id": supabaseid}, {"_id": 0, "clocked_in_at": 1, "location": 1})
-        clocked_in_time = user.get("clocked_in_at")
+        supabase_id = current_user.get("supabase_id")
+        clocked_in_time = current_user.get("clocked_in_at")
 
         if clocked_in_time:
             hours_clocked_in = (datetime.now() - clocked_in_time).total_seconds() / 3600
-            if hours_clocked_in >= (10 / 3600):
+            if hours_clocked_in >= 4:
                 await collection.update_one(
-                    {"supabase_id": supabaseid},
+                    {"supabase_id": supabase_id},
                     {"$set": {"is_clocked_in": False}, "$unset": {"clocked_in_at": ""}}
                 )
                 return {"message": "Auto clocked out after 4 hours", "auto_clocked_out": True}
 
         if data.latitude is not None:
             new_location = {"latitude": data.latitude, "longitude": data.longitude}
-        elif user.get("location"):
-            new_location = user.get("location")
+        elif current_user.get("location"):
+            new_location = current_user.get("location")
         else:
             raise HTTPException(status_code=400, detail="Location required to clock in")
 
         now = datetime.now()
         await collection.update_one(
-            {"supabase_id": supabaseid},
+            {"supabase_id": supabase_id},
             {"$set": {"is_clocked_in": True, "clocked_in_at": now, "location": new_location}}
         )
         return {"message": "Clocked in", "clocked_in_at": now}
@@ -327,9 +325,9 @@ async def clock_in_vendor(data: VendorClockInRequest, current_user: dict = Depen
 async def clock_out_vendor(current_user: dict = Depends(get_current_user)):
     try:
         collection = get_vendor_users_collection()
-        supabaseid = current_user.get("supabase_id")
+        supabase_id = current_user.get("supabase_id")
         await collection.update_one(
-            {"supabase_id": supabaseid},
+            {"supabase_id": supabase_id},
             {"$set": {"is_clocked_in": False}, "$unset": {"clocked_in_at": ""}}
         )
         return {"message": "Clocked out"}

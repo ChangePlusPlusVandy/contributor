@@ -7,6 +7,12 @@ class ConnectionManager:
 
     async def connect(self, user_id: str, websocket: WebSocket):
         await websocket.accept()
+        old = self.connections.get(user_id)
+        if old:
+            try:
+                await old.close()
+            except Exception:
+                pass
         self.connections[user_id] = websocket
 
     def disconnect(self, user_id: str):

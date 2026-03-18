@@ -1,28 +1,20 @@
 import json
 from bson import ObjectId
 from datetime import datetime
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from src.schemas.conversation import ConversationCreate
-from src.config.database import MongoDB
+from src.config.database import get_messages_collection, get_conversations_collection
 from src.messaging.connection_manager import manager
 from src.vendor_auth.middleware import verify_token
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 
-def get_messages_col():
-    return MongoDB.get_collection("messages", "the-contributor")
-
-
-def get_conversations_col():
-    return MongoDB.get_collection("conversations", "the-contributor")
-
-
 @router.post("/conversations", status_code=201)
 async def create_conversation(data: ConversationCreate, supabase_user=Depends(verify_token)):
     try:
         user_id = supabase_user.id
-        col = get_conversations_col()
+        col = get_conversations_collection()
 
         if user_id not in data.participants:
             raise HTTPException(status_code=400, detail="You must include yourself in the conversation")
@@ -55,19 +47,19 @@ async def create_conversation(data: ConversationCreate, supabase_user=Depends(ve
 async def get_conversations(supabase_user=Depends(verify_token)):
     try:
         user_id = supabase_user.id
-        col = get_conversations_col()
-        convs = await col.find({"participants": user_id}).sort("last_message_at", -1).to_list(None)
+        col = get_conversations_collection()
+        convos = await col.find({"participants": user_id}).sort("last_message_at", -1).to_list(None)
         return [
             {
-                "id": str(c["_id"]),
-                "type": c["type"],
-                "participants": c["participants"],
-                "name": c.get("name"),
-                "created_at": c["created_at"],
-                "last_message": c.get("last_message"),
-                "last_message_at": c.get("last_message_at")
+                "id": str(convo["_id"]),
+                "type": convo["type"],
+                "participants": convo["participants"],
+                "name": convo.get("name"),
+                "created_at": convo["created_at"],
+                "last_message": convo.get("last_message"),
+                "last_message_at": convo.get("last_message_at")
             }
-            for c in convs
+            for convo in convos
         ]
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -77,13 +69,13 @@ async def get_conversations(supabase_user=Depends(verify_token)):
 async def get_messages(conversation_id: str, supabase_user=Depends(verify_token)):
     try:
         user_id = supabase_user.id
-        conv = await get_conversations_col().find_one({"_id": ObjectId(conversation_id)})
+        conv = await get_conversations_collection().find_one({"_id": ObjectId(conversation_id)})
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
         if user_id not in conv["participants"]:
             raise HTTPException(status_code=403, detail="Not a participant")
 
-        messages = await get_messages_col().find(
+        messages = await get_messages_collection().find(
             {"conversation_id": conversation_id}
         ).sort("timestamp", 1).to_list(100)
 
@@ -117,7 +109,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, user_name: str)
             if not conversation_id or not content:
                 continue
 
-            conv = await get_conversations_col().find_one({"_id": ObjectId(conversation_id)})
+            conv = await get_conversations_collection().find_one({"_id": ObjectId(conversation_id)})
             if not conv or user_id not in conv["participants"]:
                 continue
 
@@ -129,9 +121,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, user_name: str)
                 "content": content,
                 "timestamp": now
             }
-            result = await get_messages_col().insert_one(doc)
+            result = await get_messages_collection().insert_one(doc)
 
-            await get_conversations_col().update_one(
+            await get_conversations_collection().update_one(
                 {"_id": ObjectId(conversation_id)},
                 {"$set": {"last_message": content, "last_message_at": now}}
             )
