@@ -1,11 +1,13 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from supabase_auth.errors import AuthApiError
-from src.schemas.user import VendorLoginRequest, VendorSetPasswordRequest
+from src.schemas.user import VendorLoginRequest, VendorSetPasswordRequest, VendorClockInRequest
 from src.vendor_auth.middleware import get_current_user
 from src.config.database import get_vendor_users_collection, supabase
 from src.config.logger import get_logger
 
 router = APIRouter(prefix="/auth", tags=["Vendor Authentication"])
+vendor_public_router = APIRouter(prefix="/vendors", tags=["Vendors"])
 logger = get_logger(__name__)
 
 
@@ -282,3 +284,65 @@ async def get_all_users(current_user: dict = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
         )
+
+
+@router.post("/clock-in", status_code=status.HTTP_200_OK)
+async def clock_in_vendor(data: VendorClockInRequest, current_user: dict = Depends(get_current_user)):
+    try:
+        collection = get_vendor_users_collection()
+        supabase_id = current_user.get("supabase_id")
+        clocked_in_time = current_user.get("clocked_in_at")
+
+        if clocked_in_time:
+            hours_clocked_in = (datetime.now() - clocked_in_time).total_seconds() / 3600
+            if hours_clocked_in >= 4:
+                await collection.update_one(
+                    {"supabase_id": supabase_id},
+                    {"$set": {"is_clocked_in": False}, "$unset": {"clocked_in_at": ""}}
+                )
+                return {"message": "Auto clocked out after 4 hours", "auto_clocked_out": True}
+
+        if data.latitude is not None:
+            new_location = {"latitude": data.latitude, "longitude": data.longitude}
+        elif current_user.get("location"):
+            new_location = current_user.get("location")
+        else:
+            raise HTTPException(status_code=400, detail="Location required to clock in")
+
+        now = datetime.now()
+        await collection.update_one(
+            {"supabase_id": supabase_id},
+            {"$set": {"is_clocked_in": True, "clocked_in_at": now, "location": new_location}}
+        )
+        return {"message": "Clocked in", "clocked_in_at": now}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/clock-out", status_code=status.HTTP_200_OK)
+async def clock_out_vendor(current_user: dict = Depends(get_current_user)):
+    try:
+        collection = get_vendor_users_collection()
+        supabase_id = current_user.get("supabase_id")
+        await collection.update_one(
+            {"supabase_id": supabase_id},
+            {"$set": {"is_clocked_in": False}, "$unset": {"clocked_in_at": ""}}
+        )
+        return {"message": "Clocked out"}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
+@vendor_public_router.get("/active", status_code=status.HTTP_200_OK)
+async def get_active_vendors():
+    collection = get_vendor_users_collection()
+    vendors = await collection.find(
+        {"is_clocked_in": True, "location": {"$ne": None}},
+        {"_id": 0, "vendor_id": 1, "name": 1, "location": 1}
+    ).to_list(length=None)
+    return {"vendors": vendors}
+
+
