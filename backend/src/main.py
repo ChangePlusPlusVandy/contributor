@@ -11,9 +11,9 @@ from contextlib import asynccontextmanager
 from src.config.database import MongoDB
 from src.config.logger import get_logger
 
-from src.vendor_auth.routes import router, vendor_public_router
+from src.vendor.routes import router, vendor_public_router
 from src.utils.util_routes import router as util_routes
-from src.admin_auth.routes import router as admin_router
+from src.admin.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
 from src.routes.resource_helper_routes import router as resource_helper_router
 from src.routes.announcement_routes import router as announcement_router

@@ -3,7 +3,7 @@ from datetime import datetime
 from bson import ObjectId
 
 from src.config.database import get_announcements_collection
-from src.admin_auth.middleware import get_current_admin
+from src.admin.middleware import get_current_admin
 from src.schemas.announcement import AnnouncementCreate
 
 router = APIRouter(prefix="/announcements")
