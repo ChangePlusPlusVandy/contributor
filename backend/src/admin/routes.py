@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from supabase_auth.errors import AuthApiError
 from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, VendorCreateRequest
-from src.admin_auth.middleware import get_current_admin, verify_token
+from src.admin.middleware import get_current_admin, verify_token
 from src.config.database import get_admin_collection, get_vendor_users_collection, supabase, supabase_admin
 from src.config.logger import get_logger
 
-router = APIRouter(prefix="/admin", tags=["Admin Authentication"])
+router = APIRouter(prefix="/admin", tags=["Admins"])
 logger = get_logger(__name__)
 
 

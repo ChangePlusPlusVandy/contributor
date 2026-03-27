@@ -1,12 +1,12 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from supabase_auth.errors import AuthApiError
-from src.schemas.user import VendorLoginRequest, VendorSetPasswordRequest, VendorClockInRequest
-from src.vendor_auth.middleware import get_current_user
-from src.config.database import get_vendor_users_collection, supabase
+from src.schemas.user import VendorLoginRequest, VendorSetPasswordRequest, VendorLocationRequest
+from src.vendor.middleware import get_current_user
+from src.config.database import get_vendor_users_collection, supabase, supabase_admin
 from src.config.logger import get_logger
 
-router = APIRouter(prefix="/auth", tags=["Vendor Authentication"])
+router = APIRouter(prefix="/auth", tags=["Vendors"])
 vendor_public_router = APIRouter(prefix="/vendors", tags=["Vendors"])
 logger = get_logger(__name__)
 
@@ -99,85 +99,42 @@ async def vendor_login(data: VendorLoginRequest):
 
 @router.post("/set-password", status_code=status.HTTP_201_CREATED)
 async def set_vendor_password(data: VendorSetPasswordRequest):
-    """
-    Set password for first-time vendor login.
-    Creates Supabase account and updates mongo.
-    """
     try:
-        collection = get_vendor_users_collection()
-
-        vendor = await collection.find_one({"vendor_id": data.vendor_id}, {"_id": 0})
+        vendors = get_vendor_users_collection()
+        vendor = await vendors.find_one({"vendor_id": data.vendor_id}, {"_id": 0})
 
         if not vendor:
-            logger.warning(f"Set password failed — Vendor ID not found: {data.vendor_id}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Vendor ID not found"
-            )
+            raise HTTPException(status_code=404, detail="Vendor ID not found")
 
-        # Check if password already set
-        if vendor.get("password_set", False):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password already set. Use login instead."
-            )
-
-        # Create Supabase account with internal email
         internal_email = _generate_internal_email(data.vendor_id)
-        supabase_id = None
+        supabase_id = vendor.get("supabase_id")
 
-        try:
-            auth_response = supabase.auth.sign_up({
-                "email": internal_email,
-                "password": data.password
-            })
+        if vendor.get("password_set") and supabase_id:
+            supabase_admin.auth.admin.update_user_by_id(supabase_id, {"password": data.password})
+        else:
+            try:
+                auth_response = supabase.auth.sign_up({"email": internal_email, "password": data.password})
+                if not auth_response.user:
+                    raise HTTPException(status_code=400, detail="Failed to create account")
+                supabase_id = auth_response.user.id
+            except AuthApiError as e:
+                if "User already registered" in str(e):
+                    sign_in = supabase.auth.sign_in_with_password({"email": internal_email, "password": data.password})
+                    supabase_id = sign_in.user.id
+                else:
+                    raise
 
-            if not auth_response.user:
-                logger.error(f"Supabase signup failed for Vendor ID: {data.vendor_id}")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to create account"
-                )
-
-            supabase_id = auth_response.user.id
-
-        except AuthApiError as e:
-            # for case where Supabase user already exists
-            if "User already registered" in str(e):
-                logger.info(f"Supabase user already exists for {data.vendor_id}, attempting sign-in")
-                # Try to sign in. doesn't break if password matches
-                try:
-                    login_response = supabase.auth.sign_in_with_password({
-                        "email": internal_email,
-                        "password": data.password
-                    })
-                    supabase_id = login_response.user.id
-                except AuthApiError:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Account exists but password doesn't match. Contact support."
-                    )
-            else:
-                raise
-
-        # Update MongoDB with supabase_id and password_set flag
-        await collection.update_one(
+        await vendors.update_one(
             {"vendor_id": data.vendor_id},
             {"$set": {"supabase_id": supabase_id, "password_set": True}}
         )
 
-        logger.info(f"Vendor password set successfully: {data.vendor_id}")
-
-        # Auto-login after setting password
-        login_response = supabase.auth.sign_in_with_password({
-            "email": internal_email,
-            "password": data.password
-        })
+        login = supabase.auth.sign_in_with_password({"email": internal_email, "password": data.password})
 
         return {
             "message": "Password set successfully",
-            "access_token": login_response.session.access_token,
-            "refresh_token": login_response.session.refresh_token,
+            "access_token": login.session.access_token,
+            "refresh_token": login.session.refresh_token,
             "user": {
                 "id": supabase_id,
                 "vendor_id": data.vendor_id,
@@ -189,11 +146,7 @@ async def set_vendor_password(data: VendorSetPasswordRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error setting vendor password: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/me", status_code=status.HTTP_200_OK)
@@ -221,73 +174,10 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
         )
 
 
-@router.get("/users/{vendor_id}", status_code=status.HTTP_200_OK)
-async def get_user_by_vendor_id(
-    vendor_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Get a specific vendor by their Vendor ID. JWT Protected.
-    """
-    try:
-        collection = get_vendor_users_collection()
-        user = await collection.find_one(
-            {"vendor_id": vendor_id},
-            {"_id": 0}
-        )
-
-        if not user:
-            logger.warning(f"User not found with Vendor ID: {vendor_id}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        logger.info(f"Fetched user profile for Vendor ID: {vendor_id}")
-
-        return {
-            "user": {
-                "vendor_id": user["vendor_id"],
-                "name": user["name"],
-                "role": user["role"]
-            }
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching user profile for {vendor_id}: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/users", status_code=status.HTTP_200_OK)
-async def get_all_users(current_user: dict = Depends(get_current_user)):
-    """
-    Get all vendors. JWT Protected.
-    """
-    try:
-        collection = get_vendor_users_collection()
-        cursor = collection.find({}, {"_id": 0, "supabase_id": 0})
-        users = await cursor.to_list(length=None)
-
-        logger.info(f"Fetched {len(users)} total vendors")
-        return {"users": users}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching all users: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
 
 
 @router.post("/clock-in", status_code=status.HTTP_200_OK)
-async def clock_in_vendor(data: VendorClockInRequest, current_user: dict = Depends(get_current_user)):
+async def clock_in_vendor(current_user: dict = Depends(get_current_user)):
     try:
         collection = get_vendor_users_collection()
         supabase_id = current_user.get("supabase_id")
@@ -302,17 +192,13 @@ async def clock_in_vendor(data: VendorClockInRequest, current_user: dict = Depen
                 )
                 return {"message": "Auto clocked out after 4 hours", "auto_clocked_out": True}
 
-        if data.latitude is not None:
-            new_location = {"latitude": data.latitude, "longitude": data.longitude}
-        elif current_user.get("location"):
-            new_location = current_user.get("location")
-        else:
+        if not current_user.get("location"):
             raise HTTPException(status_code=400, detail="Location required to clock in")
 
         now = datetime.now()
         await collection.update_one(
             {"supabase_id": supabase_id},
-            {"$set": {"is_clocked_in": True, "clocked_in_at": now, "location": new_location}}
+            {"$set": {"is_clocked_in": True, "clocked_in_at": now}}
         )
         return {"message": "Clocked in", "clocked_in_at": now}
     except HTTPException:
@@ -334,6 +220,19 @@ async def clock_out_vendor(current_user: dict = Depends(get_current_user)):
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
+
+@router.patch("/location", status_code=status.HTTP_200_OK)
+async def set_vendor_location(data: VendorLocationRequest, user: dict = Depends(get_current_user)):
+    try:
+        vendors = get_vendor_users_collection()
+        await vendors.update_one(
+            {"supabase_id": user.get("supabase_id")},
+            {"$set": {"location": {"latitude": data.latitude, "longitude": data.longitude}}}
+        )
+        return {"message": "Location updated"}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @vendor_public_router.get("/active", status_code=status.HTTP_200_OK)

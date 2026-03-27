@@ -19,9 +19,11 @@ class VendorCreateRequest(BaseModel):
     name: str
 
 
-class VendorClockInRequest(BaseModel):
-    latitude: float | None = None
-    longitude: float | None = None
+class VendorLocationRequest(BaseModel):
+    latitude: float
+    longitude: float
+
+
 
 
 
