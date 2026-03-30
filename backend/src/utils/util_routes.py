@@ -1,59 +1,87 @@
 from fastapi import APIRouter, HTTPException
-import pandas as pd
-from io import StringIO
+import gspread
 from datetime import datetime
-import httpx
 import asyncio
-import json
 from src.config.logger import get_logger
+from src.controllers.resource_controller import seed_db
+from src.config.database import get_resources_collection
+from src.utils.utils import fetch_all_tabs, JSON_KEY_PATH, SHEET_ID
 
 router = APIRouter()
 logger = get_logger(__name__)
 
-SHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/e/"
-    "2PACX-1vQseXUYiP5m_bSJ__t2I8c2Pfx_N6uwBlmzwJHLAvM_Mw0LQ6u0FqWcECfaWKrAjsr7Z-M4iqJ6DJFM/"
-    "pub?gid=0&single=true&output=csv"
-)
 
 @router.get("/sync_resources")
 async def sync_resources():
     """
-    Fetches resource data from the Google Sheet, parses it, 
-    and returns a structured summary with the synced resources.
+    Fetches resource data from all tabs of the Google Sheet and returns
+    a structured summary. Each tab name becomes the 'subcategory' value.
     """
     logger.info("Starting resource sync from Google Sheet...")
 
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-            logger.debug(f"Fetching CSV from {SHEET_URL}")
-            response = await client.get(SHEET_URL)
-            response.raise_for_status()
-            logger.info("Successfully fetched Google Sheet data.")
-
-        # Parse CSV in a background thread to avoid blocking
         loop = asyncio.get_running_loop()
-        df = await loop.run_in_executor(None, pd.read_csv, StringIO(response.text))
-        logger.debug(f"Parsed CSV with {len(df)} rows")
+        resources = await loop.run_in_executor(None, fetch_all_tabs)
 
-        # Convert to JSON string and back to handle NaN values properly
-        # pandas to_json converts NaN to null automatically
-        resources_json = df.to_json(orient="records")
-        resources = json.loads(resources_json)
-
-        logger.info(f"Successfully synced {len(resources)} resources.")
+        logger.info(f"Successfully synced {len(resources)} resources across all tabs.")
         return {
             "status": "success",
-            "source": "google_sheet",
+            "source": "google_sheets",
             "synced_at": datetime.utcnow().isoformat(),
             "count": len(resources),
             "resources": resources,
         }
 
-    except httpx.RequestError as e:
-        logger.error(f"HTTP request failed while fetching sheet: {e}", exc_info=True)
-        raise HTTPException(status_code=502, detail=f"Failed to fetch sheet: {str(e)}")
+    except FileNotFoundError:
+        logger.error(f"Service account key file not found at: {JSON_KEY_PATH}")
+        raise HTTPException(status_code=500, detail="Service account key file not found.")
+
+    except gspread.exceptions.SpreadsheetNotFound:
+        logger.error(f"Spreadsheet not found with ID: {SHEET_ID}")
+        raise HTTPException(status_code=404, detail="Google Sheet not found. Check GOOGLE_SHEET_ID.")
 
     except Exception as e:
-        logger.error(f"Error parsing or processing sheet data: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Parsing error: {str(e)}")
+        logger.error(f"Error fetching Google Sheet: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching sheet: {str(e)}")
+
+
+@router.post("/seed_from_sheets")
+async def seed_from_sheets():
+    """
+    Fetches all resources from Google Sheets and seeds MongoDB.
+    Combines sync_resources + seed_db in one call.
+    """
+    logger.info("Starting seed from Google Sheets into MongoDB...")
+
+    try:
+        loop = asyncio.get_running_loop()
+        resources = await loop.run_in_executor(None, fetch_all_tabs)
+        logger.info(f"Fetched {len(resources)} resources from Google Sheets.")
+
+        collection = get_resources_collection()
+        result = await seed_db(resources, collection)
+
+        updated_count = sum(1 for r in result["results"] if r["status"] == "updated")
+        inserted_count = sum(1 for r in result["results"] if r["status"] == "inserted")
+        logger.info(f"Seed complete: {inserted_count} inserted, {updated_count} updated.")
+
+        return {
+            "status": "success",
+            "synced_at": datetime.utcnow().isoformat(),
+            "total": len(resources),
+            "inserted": inserted_count,
+            "updated": updated_count,
+            "results": result["results"],
+        }
+
+    except FileNotFoundError:
+        logger.error(f"Service account key file not found at: {JSON_KEY_PATH}")
+        raise HTTPException(status_code=500, detail="Service account key file not found.")
+
+    except gspread.exceptions.SpreadsheetNotFound:
+        logger.error(f"Spreadsheet not found with ID: {SHEET_ID}")
+        raise HTTPException(status_code=404, detail="Google Sheet not found. Check GOOGLE_SHEET_ID.")
+
+    except Exception as e:
+        logger.error(f"Error in seed_from_sheets: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Seed failed: {str(e)}")

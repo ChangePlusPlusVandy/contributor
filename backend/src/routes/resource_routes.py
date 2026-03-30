@@ -2,7 +2,6 @@ import os
 import sys
 from fastapi import APIRouter, HTTPException, Request
 
-from typing import List
 
 # Add the backend directory to sys.path so 'src' module can be found
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,7 +14,6 @@ from src.controllers.resource_controller import (
     create_resource,
     get_resource,
     update_resource,
-    seed_db,
     receive_form,
     approve_submission,
     deny_submission
@@ -133,26 +131,6 @@ async def route_update_resource(resource_id: str, updates: dict):
         raise HTTPException(status_code=500, detail="Failed to update resource")
 
 
-@router.post("/seed")
-async def route_seed_db(resources: List[dict]):
-    """
-    Seed MongoDB database with Google Sheets resource info.
-    Returns a list of dicts that indicate the status of adding/updating each resource.
-    """
-    logger.info(f"Seeding {len(resources)} resources from Google Sheets into MongoDB")
-    try:
-        collection = get_resources_collection()
-        result = await seed_db(resources, collection)
-
-        # updated vs inserted for logging
-        updated_count = sum(1 for r in result['results'] if r['status'] == 'updated')
-        inserted_count = sum(1 for r in result['results'] if r['status'] == 'inserted')
-
-        logger.info(f"Successfully seeded database: {updated_count} updated, {inserted_count} inserted")
-        return result
-    except Exception as e:
-        logger.error(f"Error seeding database: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to seed database from sheets")
 
 @router.post("/form")
 async def route_receive_form(request: Request):
