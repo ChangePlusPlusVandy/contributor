@@ -10,7 +10,7 @@ class VendorLoginRequest(BaseModel):
 
 
 class VendorSetPasswordRequest(BaseModel):
-    vendor_id: str = Field(..., min_length=4, max_length=4)
+    vendor_id: str | None = None
     password: str = Field(..., min_length=6)
 
 
