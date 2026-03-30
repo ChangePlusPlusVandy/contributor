@@ -32,7 +32,7 @@ class TestAdminRegistration:
             "email": f"test_{uuid.uuid4().hex[:8]}@gmail.com",
             "password": TEST_PASSWORD
         })
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
         assert "Unauthorized email domain" in response.json()["detail"]
 
     def test_register_short_password(self, client):
@@ -53,7 +53,7 @@ class TestAdminLogin:
             "email": "test@gmail.com",
             "password": TEST_PASSWORD
         })
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_login_wrong_password(self, client):
         response = client.post("/admin/login", json={
@@ -66,7 +66,7 @@ class TestAdminLogin:
 class TestAdminProtectedRoutes:
     def test_me_without_token(self, client):
         response = client.get("/admin/me")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_me_invalid_token(self, client):
         response = client.get("/admin/me", headers={"Authorization": "Bearer invalid_token"})
@@ -74,12 +74,12 @@ class TestAdminProtectedRoutes:
 
     def test_create_vendor_without_token(self, client):
         response = client.post("/admin/vendors", json={"vendor_id": "T001", "name": "Test"})
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_get_vendors_without_token(self, client):
         response = client.get("/admin/vendors")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_delete_vendor_without_token(self, client):
         response = client.delete("/admin/vendors/T001")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]

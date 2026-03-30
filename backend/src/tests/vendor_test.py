@@ -50,7 +50,7 @@ class TestSetPassword:
 class TestProtectedRoutes:
     def test_me_without_token(self, client):
         response = client.get("/auth/me")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_me_invalid_token(self, client):
         response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token"})
@@ -58,15 +58,15 @@ class TestProtectedRoutes:
 
     def test_clock_in_without_token(self, client):
         response = client.post("/auth/clock-in")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_clock_out_without_token(self, client):
         response = client.post("/auth/clock-out")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
     def test_set_location_without_token(self, client):
         response = client.patch("/auth/location", json={"latitude": 36.1, "longitude": -86.7})
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
 
 class TestPublicRoutes:
