@@ -40,3 +40,6 @@ yarn-error.log*
 
 # Logs
 *.log
+
+backend/silken-granite-491720-j2-91b71ab10cca.json
+backend/*service-account*.json

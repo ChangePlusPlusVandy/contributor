@@ -19,9 +19,10 @@ from src.schemas.resource import (
 from src.utils.utils import (
     getCoordinatesObj,
     prepare_default_fields,
-    extract_field_data   
+    extract_field_data,
+    normalize_sheet_resource
 )
-from src.utils.email_notifications import send_submission_status_email 
+from src.utils.email_notifications import send_submission_status_email
 
 
 async def get_resources(collection, active: bool, check_removed: bool):
@@ -187,11 +188,23 @@ async def seed_db(resources: List[dict], collection):
 
         # given: resources
         for resource in resources:
+            resource = normalize_sheet_resource(resource)
+
+            if resource.get("address"):
+                address_parts = [
+                    resource.get("address"),
+                    resource.get("city"),
+                    resource.get("state"),
+                    resource.get("zip_code")
+                ]
+            else:
+                address_parts = None
+
             result = await collection.update_one(
                 {"org_name": resource["org_name"]},
                 {
                     "$set": resource,
-                    "$setOnInsert": prepare_default_fields() # TODO: see slack notes on seed_db
+                    "$setOnInsert": prepare_default_fields(address_parts=address_parts)
                  },
                 upsert = True
             )
@@ -416,3 +429,5 @@ async def deny_submission(submission_id: str, pending_collection):
     except Exception as e:
         print(f"Error in deny_submission controller: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
+    
+
