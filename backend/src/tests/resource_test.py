@@ -92,6 +92,8 @@ class TestCreateResource:
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
                 "category": "Urgent Needs",
+                "subcategory": "Personal Care",
+                "group": "Showers",
                 "removed": False,
                 "created_at": "2024-01-01T00:00:00",
                 "address": "123 Test St",
@@ -115,6 +117,8 @@ class TestCreateResource:
             "phone": TEST_RESOURCE_PHONE,
             "org_name": unique_org_name(),
             "category": "Urgent Needs",
+            "subcategory": "Personal Care",
+            "group": "Showers",
             "removed": False,
             "created_at": "2024-01-01T00:00:00",
         }
@@ -158,6 +162,8 @@ class TestGetOneResource:
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
                 "category": "Urgent Needs",
+                "subcategory": "Personal Care",
+                "group": "Showers",
                 "removed": False,
                 "created_at": "2024-01-01T00:00:00",
             }
@@ -186,6 +192,8 @@ class TestGetOneResource:
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": org_name,
                 "category": "Urgent Needs",
+                "subcategory": "Personal Care",
+                "group": "Showers",
                 "removed": False,
                 "created_at": "2024-01-01T00:00:00",
             }
@@ -233,6 +241,8 @@ class TestUpdateResource:
                 "phone": TEST_RESOURCE_PHONE,
                 "org_name": unique_org_name(),
                 "category": "Urgent Needs",
+                "subcategory": "Personal Care",
+                "group": "Showers",
                 "removed": False,
                 "created_at": "2024-01-01T00:00:00",
             }
