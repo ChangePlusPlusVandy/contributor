@@ -4,11 +4,31 @@ import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import ResourceModal from './ResourceModal';
 
-export default function MapComponent({ mapData, location, animateTo }: { mapData: MapResource[], location: Location.LocationObject | null, animateTo: { longitude: number, latitude: number } | null }) {
+function resourceCoords(r: Resource): { latitude: number; longitude: number } | null {
+    if (r.coordinates?.latitude != null && r.coordinates?.longitude != null) {
+        return { latitude: r.coordinates.latitude, longitude: r.coordinates.longitude };
+    }
+    const legacy = r as Resource & { latitude?: number; longitude?: number };
+    if (legacy.latitude != null && legacy.longitude != null) {
+        return { latitude: legacy.latitude, longitude: legacy.longitude };
+    }
+    return null;
+}
+
+/** ResourceModal still expects flat lat/lng (and optional org_name from API/JSON). */
+function resourceForModal(r: Resource): Resource & { latitude: number; longitude: number; org_name?: string } {
+    const c = resourceCoords(r);
+    const legacy = r as Resource & { org_name?: string };
+    const latitude = c?.latitude ?? 36.125;
+    const longitude = c?.longitude ?? -86.78316;
+    return { ...r, ...legacy, latitude, longitude };
+}
+
+export default function MapComponent({ mapData, location, animateTo }: { mapData: Resource[], location: Location.LocationObject | null, animateTo: { longitude: number, latitude: number } | null }) {
 
     const [hasCentered, setHasCentered] = useState<boolean>(false);
     const mapRef = useRef<MapView | null>(null);
-    const [modalResource, setModalResource] = useState<MapResource | null>(null);
+    const [modalResource, setModalResource] = useState<(Resource & { latitude: number; longitude: number; org_name?: string }) | null>(null);
 
     useEffect(() => {
         
@@ -57,13 +77,16 @@ export default function MapComponent({ mapData, location, animateTo }: { mapData
                 ref={mapRef}
             >
                 {
-                    mapData.map((resource: MapResource, key: number) => {
+                    mapData.map((resource: Resource, key: number) => {
+                        const c = resourceCoords(resource);
+                        const latitude = c?.latitude ?? 36.125;
+                        const longitude = c?.longitude ?? -86.78316;
 
                         return <Marker
                             key={key}
-                            coordinate={{ latitude: resource.latitude || 36.125, longitude: resource.longitude || -86.78316 }}
+                            coordinate={{ latitude, longitude }}
                             calloutOffset={{ x: 0.0, y: -50.0 }}
-                            onPress={() => setModalResource(resource)}
+                            onPress={() => setModalResource(resourceForModal(resource))}
                         />
 
                     })
