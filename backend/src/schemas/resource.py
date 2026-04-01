@@ -19,32 +19,43 @@ class CategoryChoices(str, Enum):
     WORK = "Find Work and Get Connected"
 
 class SubCategoryChoices(str, Enum):
+    # Urgent
     FOOD = "Food"
     EMERGENCY_SHELTER = "Emergency Shelter"
     HOUSING = "Housing"
     PERSONAL_CARE = "Personal Care"
     RENT = "Rent + Utilities Assistance"
+
+    # Health and Wellness
     MEDICAL = "Medical Care"
     MENTAL = "Mental Health"
     ADDICTION = "Addiction Services"
     NURSING = "Nursing Homes + Hospice"
     DENTAL_HEARING = "Dental and Hearing"
     HIV_MORE = "HIV, PReP, & HEP C"
+
+    # Family and Pets
     TUTORING = "Tutoring + Mentoring"
     CHILDCARE = "Childcare"
     FAMILY_SUPPORT = "Family Support"
     PET_HELP = "Pet Help"
+
+    # Specialized Assistance
     SENIORS_DISABILITY = "Seniors + People with Disabilities"
     VETS = "Veterans"
     LGBTQ = "LGBTQ+"
     IMMIGRANTS_REFUGEES = "Immigrants + Refugees"
     INCARCERATED = "Formerly Incarcerated"
+
+    # Get Help
     LEGAL = "Legal Aid"
     DOMESTIC = "Domestic Violence"
     SEXUAL_ASSAULT = "Sexual Assault"
     ADVOCACY = "Advocacy"
     SOCIAL_SERVICES = "ID's, Birth Certificates & Social Services"
     OUTSIDE_DAVIDSON = "Outside of Davidson County"
+
+    # Find Work and Get Connected
     PHONES = "Phones"
     JOBS = "Jobs + Job Training"
     ADULT_EDU = "Adult Education"
