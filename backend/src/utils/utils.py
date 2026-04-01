@@ -190,3 +190,6 @@ def extract_field_data(raw_data):
     print(f"resource data after filtering: {resource_data}")
     
     return resource_data
+
+# def normalize_hours():
+    # llm call here
