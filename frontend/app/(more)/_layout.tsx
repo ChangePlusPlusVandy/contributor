@@ -1,7 +1,12 @@
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 
-export default function MapLayout() {
+export default function MoreLayout() {
 
-    return <Slot/>;
+    return (
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="more" />
+            <Stack.Screen name="login" />
+        </Stack>
+    );
 
 }

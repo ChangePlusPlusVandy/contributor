@@ -1,13 +1,22 @@
-import { useApi } from "@/lib/api";
-import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useAuth } from "@/providers/auth";
+import { useRouter } from "expo-router";
+import { Bookmark } from "lucide-react-native";
 
-const Resource = ({ resource }: { resource: Resource} ) => {
+const SECTION_TO_CATEGORY: Record<string, Categories> = {
+    "Urgent Needs": "Urgent Needs",
+    "Health & Wellness": "Health and Wellness",
+    "Family & Pets": "Family and Pets",
+    "Specialized Assistance": "Specialized Assistance and Help",
+    "Get Help": "Specialized Assistance and Help",
+    "Find Work": "Find Work",
+};
+
+const Resource = ({ resource, onPress }: { resource: any; onPress?: () => void }) => {
 
     const scale = useSharedValue<number>(1);
     const style = useAnimatedStyle(() => (
@@ -17,7 +26,11 @@ const Resource = ({ resource }: { resource: Resource} ) => {
     ));
 
     return (
-        <Pressable onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })} onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}>
+        <Pressable
+            onPress={onPress}
+            onPressIn={() => scale.value = withSpring(0.9, { stiffness: 900, damping: 90, mass: 6 })}
+            onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}
+        >
             <Animated.View
                 className="w-[100px] h-[100px] rounded-[12px] bg-white flex justify-start items-center mr-[10px]"
                 style={[
@@ -42,9 +55,25 @@ const Resource = ({ resource }: { resource: Resource} ) => {
 
 const ResourceSection = ({ title, resources }: { title: string, resources: Resource[] | undefined }) => {
 
+    const { user } = useAuth();
+    const router = useRouter();
+    const categoryFilter = SECTION_TO_CATEGORY[title] ?? title;
+
+    const navigateToCategory = (_title: string) => {
+        router.push({ pathname: "/(home)/category", params: { title: _title, filter: categoryFilter } });
+    };
+
     return (
         <View className="ml-[10px] mb-[36px]">
-            <Text className="font-lexend-semibold text-[18px] mb-[12px]">{title}</Text>
+            <Pressable>
+                <View className="flex w-full justify-between items-center flex-row">
+                    <Text className="font-lexend-semibold text-[18px] mb-[12px]">{title}</Text>
+                    {
+                        (user && user.role == "admin") &&
+                        <Image source={require("@/assets/images/pencil.png")} contentFit="contain" style={{ width: 24, height: 24, marginRight: 2, marginBottom: 5 }}/>
+                    }
+                </View>
+            </Pressable>
             <ScrollView
                 horizontal
                 contentContainerStyle={{ flexDirection: "row", alignItems: "center" }}
@@ -53,7 +82,7 @@ const ResourceSection = ({ title, resources }: { title: string, resources: Resou
             >   
                 {
                     resources?.map((resource, key) => (
-                        <Resource resource={resource} key={key}/>
+                        <Resource resource={resource} key={key} onPress={() => navigateToCategory(resource.name)}/>
                     ))
                 }
             </ScrollView>
@@ -61,6 +90,39 @@ const ResourceSection = ({ title, resources }: { title: string, resources: Resou
     );
 
 }
+
+const BookmarksLink = () => {
+    const router = useRouter();
+    const scale = useSharedValue(1);
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+    }));
+
+    return (
+        <Pressable
+            onPress={() => router.push("/(home)/bookmarks")}
+            onPressIn={() => scale.value = withSpring(0.97, { stiffness: 900, damping: 90, mass: 6 })}
+            onPressOut={() => scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 })}
+            className="mx-[10px] mb-[20px]"
+        >
+            <Animated.View
+                className="h-[56px] rounded-[12px] bg-white flex flex-row items-center px-[10px]"
+                style={[
+                    {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 2, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 4,
+                    },
+                    animStyle,
+                ]}
+            >
+                <Text className="font-lexend-semibold text-[15px] text-[#2B84E9] ml-[10px]">Bookmarks</Text>
+            </Animated.View>
+        </Pressable>
+    );
+};
 
 const UserHome = () => {
     return (
@@ -71,18 +133,19 @@ const UserHome = () => {
                     <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
                     <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
-                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+                {/* <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" /> */}
             </View>
             <ScrollView
                 contentContainerStyle={{ paddingBottom: 85 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="w-full h-[100px] flex justify-start items-center flex-row mb-3 mt-1.5">
+                <View className="w-full h-[100px] flex justify-start items-center flex-row mb-1.5 mt-1.5">
                     <View className="ml-[10px]">
                         <Text className="font-lexend-bold text-[29px] text-[#2B84E9]">Middle Tennesse</Text>
                         <Text className="font-lexend-bold text-[29px] text-[#2B84E9] -mt-1">Resource Directory</Text>
                     </View>
                 </View>
+                <BookmarksLink />
                 <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
                 <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
                 <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />
@@ -97,6 +160,7 @@ const UserHome = () => {
 const AdminHome = () => {
 
     const { user } = useAuth();
+    const isAdmin = user && user.role == "admin";
 
     return (
         <SafeAreaView className="bg-[#F8F8F8]">
@@ -106,7 +170,7 @@ const AdminHome = () => {
                     <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
                     <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
-                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+                {/* <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" /> */}
             </View>
             <ScrollView
                 contentContainerStyle={{ paddingBottom: 85 }}
@@ -119,6 +183,7 @@ const AdminHome = () => {
                 <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
                     <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">2</Text> new resources awaitng for approval</Text>
                 </View>
+                <BookmarksLink />
                 <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
                 <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
                 <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />
@@ -139,7 +204,7 @@ const VendorHome = () => {
                     <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
                     <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
-                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+                {/* <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" /> */}
             </View>
             <ScrollView
                 contentContainerStyle={{ paddingBottom: 85 }}
@@ -151,6 +216,7 @@ const VendorHome = () => {
                         <Text className="font-lexend-bold text-[29px] text-[#2B84E9] -mt-1">Resource Directory</Text>
                     </View>
                 </View>
+                <BookmarksLink />
                 <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
                 <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
                 <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />

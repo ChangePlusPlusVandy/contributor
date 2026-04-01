@@ -1,6 +1,8 @@
 import { useApi } from "@/lib/api";
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import * as SecureStore from 'expo-secure-store';
+import axios from "axios";
+import { config } from "@/lib/env";
 
 type AuthContextType = {
     user: User | null;
@@ -14,7 +16,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const [user, setUser] = useState<User | null>(null);
     const [loaded, setLoaded] = useState<boolean>(false);
-    const { makeRequest } = useApi();
 
     useEffect(() => {
 
@@ -25,19 +26,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return;
             }
             const auth: AuthStore = JSON.parse(store);
-            const res = await makeRequest(`${auth.role == "admin" ? "admin" : "auth"}/me`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
-            });
-            if (res.status == 403) {
+            try {
+                const res = await axios.get(`${config.API_URL}${auth.role == "admin" ? "admin" : "auth"}/me`, {
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
+                });
+                const { supabase_id, ...userData } = res.data.admin;
+                setUser(userData);
+            } 
+            finally {
                 setLoaded(true);
-                return;
             }
-            const { supabase_id, ...userData } = res.admin;
-            setUser(userData);
-            setLoaded(true);
-        } 
-
+        }
         init();
 
     }, [])

@@ -15,19 +15,37 @@ import { ScrollView } from "react-native";
 import ResourceModal from "@/components/ResourceModal";
 import debounce from "lodash.debounce"
 
+function resourceCoords(r: Resource): { latitude: number; longitude: number } | null {
+    if (r.coordinates?.latitude != null && r.coordinates?.longitude != null) {
+        return { latitude: r.coordinates.latitude, longitude: r.coordinates.longitude };
+    }
+    const legacy = r as Resource & { latitude?: number; longitude?: number };
+    if (legacy.latitude != null && legacy.longitude != null) {
+        return { latitude: legacy.latitude, longitude: legacy.longitude };
+    }
+    return null;
+}
+
 const CATEGORY_SUBCATEGORIES: Record<Categories, string[]> = {
     "Urgent Needs": ["Food", "Personal Care", "Emergency Shelter", "Housing", "Rent + Utilities Assistance"],
-    "Health & Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes & Hospice", "Dental + Hearing", "HIV PrEP, & HEP C"],
-    "Family & Pets": ["Tutoring & Mentoring", "Childcare", "Family Support", "Pet Help"],
-    "Specialized": ["Tutoring & Mentoring", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated"],
-    "Help": ["Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "Identification", "Outside Davidson Country", "Phones"],
+    "Health and Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes & Hospice", "Dental + Hearing", "HIV PrEP, & HEP C"],
+    "Family and Pets": ["Tutoring & Mentoring", "Childcare", "Family Support", "Pet Help"],
+    "Specialized Assistance and Help": [
+        "Tutoring & Mentoring", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated",
+        "Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "Identification", "Outside Davidson Country", "Phones"
+    ],
     "Find Work": ["Jobs + Training", "Adult Education", "Arts", "Transportation"],
+    "Get Help": [""]
 };
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
     const color = useSharedValue<number>(isPressed ? 1 : 0);
     const scale = useSharedValue<number>(1);
+
+    useEffect(() => {
+        color.value = withTiming(isPressed ? 1 : 0, { duration: 300 });
+    }, [isPressed]);
     const scaleStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }]
     }));
@@ -71,7 +89,7 @@ const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOth
 
 }
 
-const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResource[], location: Location.LocationObject | null, setAnimateTo: (longitude: number, latitude: number) => void }) => {
+const TopPanel = ({ resources, location, setAnimateTo }: { resources: Resource[], location: Location.LocationObject | null, setAnimateTo: (longitude: number, latitude: number) => void }) => {
 
     const height = useSharedValue(30);
     const opened = useRef<boolean>(false);
@@ -104,7 +122,7 @@ const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResourc
                 </View>
                 {
                     resources.map((val, key) => (
-                        <Pressable onLongPress={() => { if (val.latitude && val.longitude) setAnimateTo(val.longitude, val.latitude) }} key={key} className="mb-[10px] mx-[10px]">
+                        <Pressable onLongPress={() => { const c = resourceCoords(val); if (c) setAnimateTo(c.longitude, c.latitude) }} key={key} className="mb-[10px] mx-[10px]">
                             <ResourceModal absolute={false} modalResource={val} closeModalResource={() => { }} location={location}/>
                         </Pressable>
                     ))
@@ -120,18 +138,15 @@ const TopPanel = ({ resources, location, setAnimateTo }: { resources: MapResourc
 
 export default function Map() {
 
-    const { makeRequest } = useApi();
-    const [mapData, setMapData] = useState<MapResource[] | undefined>(undefined);
-    const json = require("../../mapData.json");
+    const [mapData, setMapData] = useState<Resource[] | undefined>(undefined);
     const insets = useSafeAreaInsets();
 
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [distance, setDistance] = useState<number>(20);
     const [distanceText, setDistanceText] = useState<string>("20");
-    const [filters, setFilters] = useState<Categories[]>([]);
-    const [subcategoryFilters, setSubcategoryFilters] = useState<string[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<Categories | null>(null);
+    const [subcategoryFilter, setSubcategoryFilter] = useState<string | null>(null);
     const [idRequired, setIDRequired] = useState<boolean>(false);
-    const [openNow, setOpenNow] = useState<boolean>(false);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [animateTo, setAnimateTo] = useState<{ longitude: number, latitude: number } | null>(null);
     const [search, setSearch] = useState<string>("");
@@ -139,67 +154,60 @@ export default function Map() {
     const onSearchChange = useCallback(debounce((val: string) => setSearch(val), 400), []);
     const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
 
-    useEffect(() => {
-        
-        // makeRequest("resources/", {
-        //     method: "GET"
-        // }).then((result) => {
-        //     setMapData(result.resources);
-        //     // console.log(JSON.stringify(result, null, 4));
-        // });
-        setMapData(json);
+    const { makeRequest } = useApi();
 
+    useEffect(() => {
+        makeRequest("resources/", {
+            method: "GET"
+        }).then((result) => {
+            if (result.error != null) {
+                setMapData([]);
+                return;
+            }
+            const raw = result.resources;
+            const list = Array.isArray(raw) ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object"): [];
+            setMapData(list);
+        });
     }, []);
 
     const filteredMapData = useMemo(() => {
         if (!mapData) return [];
 
-        const activeSubcategoriesByCategory: Partial<Record<Categories, string[]>> = {};
-        for (const category of filters) {
-            const subs = subcategoryFilters.filter(s => CATEGORY_SUBCATEGORIES[category].includes(s));
-            if (subs.length > 0) {
-                activeSubcategoriesByCategory[category] = subs;
-            }
-        }
-
-        return mapData.filter(resource => {
-            const categoryMatch = filters.length !== 0 ? filters.includes(resource.category) : true;
+        return mapData.filter((resource) => {
+            if (resource == null || typeof resource !== "object") return false;
+            const name = resource.name ?? "";
+            const categoryMatch = selectedCategory !== null ? resource.category === selectedCategory : true;
 
             let subcategoryMatch = true;
-            const activeSubs = activeSubcategoriesByCategory[resource.category];
-            if (activeSubs && activeSubs.length > 0) {
-                subcategoryMatch = activeSubs.some(sub =>
-                    resource.name.toLowerCase().includes(sub.toLowerCase())
-                );
+            if (subcategoryFilter && resource.category === selectedCategory) {
+                subcategoryMatch = name.toLowerCase().includes(subcategoryFilter.toLowerCase());
             }
 
             return categoryMatch &&
                 subcategoryMatch &&
                 (idRequired ? !resource.id_required : true) &&
-                (openNow ? isOpen(resource.hours, day, time) : true) &&
                 (search !== ""
-                    ? resource.name.toLowerCase().includes(search.toLowerCase())
+                    ? name.toLowerCase().includes(search.toLowerCase())
                     : true);
         });
-    }, [filters, subcategoryFilters, idRequired, openNow, mapData, search, day, time]);
+    }, [selectedCategory, subcategoryFilter, idRequired, mapData, search, day, time]);
 
     const toggleFilter = (category: Categories) => {
-        if (filters.includes(category)) {
-            setFilters(prev => prev.filter(v => v !== category));
-            const subs = CATEGORY_SUBCATEGORIES[category];
-            setSubcategoryFilters(prev => prev.filter(v => !subs.includes(v)));
-        }
-        else {
-            setFilters(prev => [...prev, category]);
+        if (selectedCategory === category) {
+            setSelectedCategory(null);
+            setSubcategoryFilter(null);
+        } else {
+            setSelectedCategory(category);
+            setSubcategoryFilter(null);
         }
     }
 
     const toggleSubcategory = (subcategory: string) => {
-        if (subcategoryFilters.includes(subcategory)) {
-            setSubcategoryFilters(prev => prev.filter(v => v !== subcategory));
+        if (subcategoryFilter === subcategory) {
+            setSubcategoryFilter(null);
         }
         else {
-            setSubcategoryFilters(prev => [...prev, subcategory]);
+            setSubcategoryFilter(subcategory);
         }
     }
 
@@ -246,7 +254,7 @@ export default function Map() {
                                         <TextInput onChangeText={(v) => onSearchChange(v)} className="text-[14px] font-lexend-medium text-[#00000059] ml-[6px] w-[85%]" placeholder="Search resources"></TextInput>
                                     </View>
                                 </View>
-                                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" />
+                                {/* <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginRight: 10 }} contentFit="contain" /> */}
                             </View>
                             <View className="flex flex-row justify-between items-center mt-[6px] mr-[10px]">
                                 <Text className="ml-[12px] font-lexend-medium">Resources near you</Text>
@@ -307,47 +315,43 @@ export default function Map() {
                                                 <Text className="font-lexend-medium text-[14px]">Filter</Text>
                                             </View>
                                             <View className="flex flex-row justify-between items-center mt-[8px]">
-                                                <FilterButton title="Open Now" isPressed={openNow} toggleOther={() => setOpenNow(v => !v)} width={145} height={35}/>
                                                 <FilterButton title="ID Not Required" isPressed={idRequired} toggleOther={() => setIDRequired(v => !v)} width={145} height={35} />
                                             </View>
                                             <View className="mt-[7px] h-[26px] flex items-center flex-row">
                                                 <Text className="font-lexend-medium text-[14px]">Category</Text>
                                             </View>
                                             <View className="flex flex-row justify-between items-center mt-[8px]">
-                                                <FilterButton title="Urgent Needs" isPressed={filters.includes("Urgent Needs")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
-                                                <FilterButton title="Health & Wellness" isPressed={filters.includes("Health & Wellness")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
-                                                <FilterButton title="Family & Pets" isPressed={filters.includes("Family & Pets")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                                <FilterButton title="Urgent Needs" isPressed={selectedCategory === "Urgent Needs"} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
+                                                <FilterButton title="Health and Wellness" isPressed={selectedCategory === "Health and Wellness"} toggleFilter={toggleFilter} textSize={8} width={98} height={32} />
+                                                <FilterButton title="Family and Pets" isPressed={selectedCategory === "Family and Pets"} toggleFilter={toggleFilter} textSize={8} width={98} height={32} />
                                             </View>
-                                            <View className="flex flex-row justify-between items-center mt-[7px]">
-                                                <FilterButton title="Specialized" isPressed={filters.includes("Specialized")} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
-                                                <FilterButton title="Help" isPressed={filters.includes("Help")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
-                                                <FilterButton title="Find Work" isPressed={filters.includes("Find Work")} textSize={10} toggleFilter={toggleFilter} width={98} height={32} />
+                                            <View className="flex flex-row justify-left items-center mt-[7px] gap-[9px]">
+                                                <FilterButton title="Specialized Assistance and Help" isPressed={selectedCategory === "Specialized Assistance and Help"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
+                                                <FilterButton title="Find Work" isPressed={selectedCategory === "Find Work"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
+                                                <FilterButton title="Get Help" isPressed={selectedCategory === "Get Help"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
                                             </View>
-                                            {filters.length > 0 && (
+                                            {selectedCategory !== null && CATEGORY_SUBCATEGORIES[selectedCategory] && (
                                                 <View className="mt-[12px]">
                                                     <Text className="font-lexend-medium text-[14px] mb-[8px]">Subcategory</Text>
-                                                    {filters.map((category) => (
-                                                        <Animated.View
-                                                            key={category}
-                                                            entering={FadeIn.duration(200)}
-                                                            exiting={FadeOut.duration(200)}
-                                                            className="mb-[10px]"
-                                                        >
-                                                            <View className="flex flex-row flex-wrap" style={{ gap: 7 }}>
-                                                                {CATEGORY_SUBCATEGORIES[category].map((sub) => (
-                                                                    <FilterButton
-                                                                        key={`${category}-${sub}`}
-                                                                        title={sub}
-                                                                        isPressed={subcategoryFilters.includes(sub)}
-                                                                        toggleOther={() => toggleSubcategory(sub)}
-                                                                        textSize={9}
-                                                                        width={98}
-                                                                        height={28}
-                                                                    />
-                                                                ))}
-                                                            </View>
-                                                        </Animated.View>
-                                                    ))}
+                                                    <Animated.View
+                                                        entering={FadeIn.duration(200)}
+                                                        exiting={FadeOut.duration(200)}
+                                                        className="mb-[10px]"
+                                                    >
+                                                        <View className="flex flex-row flex-wrap" style={{ gap: 7 }}>
+                                                            {CATEGORY_SUBCATEGORIES[selectedCategory].map((sub) => (
+                                                                <FilterButton
+                                                                    key={`${selectedCategory}-${sub}`}
+                                                                    title={sub}
+                                                                    isPressed={subcategoryFilter === sub}
+                                                                    toggleOther={() => toggleSubcategory(sub)}
+                                                                    textSize={9}
+                                                                    width={98}
+                                                                    height={28}
+                                                                />
+                                                            ))}
+                                                        </View>
+                                                    </Animated.View>
                                                 </View>
                                             )}
                                         </ScrollView>

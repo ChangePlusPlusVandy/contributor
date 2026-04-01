@@ -3,20 +3,37 @@ import type { ReactNode } from "react"
 declare global {
 
     type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-    type Categories = "Urgent Needs" | "Health & Wellness" | "Family & Pets" | "Specialized" | "Help" | "Find Work";
+    type Categories = "Urgent Needs" | "Health and Wellness" | "Family and Pets" | "Specialized Assistance and Help" | "Find Work" | "Get Help";
 
-    type MapResource = {
-        _id: string,
-        latitude: number | null,
-        longitude: number | null,
-        name: string,
-        phone: String,
-        address: string,
-        id_required: boolean,
-        category: Categories
-        hours: Record<Weekday, [String, String] | null>
-    }
-
+    type Resource = {
+        name: string;
+        email: string;
+        phone: number;
+        org_name: string;
+        category: Categories;
+        page?: number | null;
+        bus_line?: string | null;
+        hours?: string | null;
+        services?: string | null;
+        id_required?: boolean | null;
+        requirements?: string | null;
+        app_process?: string | null;
+        other?: string | null;
+        address?: string | null;
+        city?: string | null;
+        state?: string | null;
+        zip_code?: string | null;
+        website?: string | null;
+        org_phones?: string | null;
+        org_email?: string | null;
+        removed: boolean;
+        coordinates?: {
+          latitude: number;
+          longitude: number;
+        } | null;
+        created_at: string;
+        subcategory: string;
+      };
     type Resource = {
         imageURL: string,
         name: string

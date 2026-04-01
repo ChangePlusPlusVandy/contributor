@@ -15,6 +15,7 @@ import {
 } from "@expo-google-fonts/lexend";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider } from '@/providers/auth';
+import { BookmarksProvider } from '@/providers/bookmarks';
 import { Layout } from "@/components/Layout";
 
 SplashScreen.preventAutoHideAsync();
@@ -40,7 +41,9 @@ export default function RootLayout() {
 	else {
 		return (
 			<AuthProvider>
-				<Layout/>
+				<BookmarksProvider>
+					<Layout/>
+				</BookmarksProvider>
 			</AuthProvider>
 		);
 	}

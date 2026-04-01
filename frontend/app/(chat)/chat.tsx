@@ -1,185 +1,168 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, Text, KeyboardAvoidingView, TextInput, Pressable } from "react-native";
+import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform } from "react-native";
 import { Image } from "expo-image";
-import { Platform } from "react-native";
-import { useEffect, useRef, useState } from "react";
-import Animated, { FadeOut, FadeIn, Easing, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from "react-native-reanimated";
-import { ScrollView } from "react-native";
-import { Keyboard } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { useAuth } from "@/providers/auth";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
-type MessageType = {
-    role: "ai" | "user",
-    content: string
-}
+type AnnouncementItem = {
+    id: string;
+    body: string;
+    createdAt: number;
+};
 
-const Message = ({ role, content }: MessageType) => {
-    if (role === "user") {
-        return (
-            <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="p-[10px] max-w-[188px] bg-white border-solid border-2 border-black/10 rounded-[10px] mr-[19px] ml-auto mt-[17px]">
-                <Text className="text-[14px]">{content}</Text>
-            </Animated.View>
-        );
-    }
-    else {
-        return (
-            <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="flex justify-start items-start flex-row mt-[17px] ml-[19px]">
-                <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 39, height: 39, marginRight: 8 }} contentFit="contain" />
-                <View className="p-[10px] max-w-[210px] bg-[#E0F5FF] border-solid border-2 border-black/10 rounded-[10px]">
-                    <Text className="text-[14px]">{content}</Text>
-                </View>
-            </Animated.View>
-        );
-    }
-}
-
-const Thinking = () => {
-
-    const opacity = useSharedValue<number>(0);
+const PostButton = ({ onPress, disabled }: { onPress: () => void; disabled: boolean }) => {
+    const scale = useSharedValue(1);
     const style = useAnimatedStyle(() => ({
-        opacity: opacity.value
+        transform: [{ scale: scale.value }],
     }));
 
-    useEffect(() => {
-        opacity.value = withRepeat(
-            withSequence(
-                withTiming(1, { duration: 2000, easing: Easing.out(Easing.quad) }),
-                withTiming(0, { duration: 2000, easing: Easing.out(Easing.quad) })
-            ),
-            Infinity
-        )
-    }, []);
+    return (
+        <Pressable
+            onPress={onPress}
+            disabled={disabled}
+            onPressIn={() => {
+                scale.value = withSpring(0.97, { stiffness: 900, damping: 90, mass: 6 });
+            }}
+            onPressOut={() => {
+                scale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 });
+            }}
+        >
+            <Animated.View
+                style={[
+                    style,
+                    {
+                        opacity: disabled ? 0.45 : 1,
+                        backgroundColor: "#2B84E9",
+                        borderRadius: 10,
+                        paddingVertical: 12,
+                        alignItems: "center",
+                    },
+                ]}
+            >
+                <Text className="font-lexend-semibold text-[15px] text-white">Post</Text>
+            </Animated.View>
+        </Pressable>
+    );
+};
+
+const AnnouncementCard = ({ item }: { item: AnnouncementItem }) => {
+    const dateLabel = useMemo(() => {
+        return new Date(item.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    }, [item.createdAt]);
 
     return (
-        <Animated.View exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} className="mt-[17px] ml-[19px]">
-            <Animated.View style={[style]}>
-                <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 39, height: 39, marginRight: 8 }} contentFit="contain" />
-            </Animated.View>
-        </Animated.View>
+        <View
+            className="bg-white rounded-[12px] px-[14px] py-[14px] mb-[12px]"
+            style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 2, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 4,
+            }}
+        >
+            <Text className="font-lexend-medium text-[12px] opacity-50 mb-[8px]">{dateLabel}</Text>
+            <Text className="font-lexend-medium text-[15px] leading-[22px]">{item.body}</Text>
+        </View>
     );
-}
+};
 
-export default function Chat() {
+const SEED_ANNOUNCEMENTS: AnnouncementItem[] = [
+    {
+        id: "seed-1",
+        body: "Welcome to Where to Turn in Nashville. Check back here for updates on resources and community news.",
+        createdAt: Date.now() - 86400000 * 2,
+    },
+];
 
-    const [chatting, setChatting] = useState<boolean>(false);
-    const [chats, setChats] = useState<MessageType[]>([]);
-    const [inputText, setInputText] = useState<string>("");
-    const [thinking, setThinking] = useState<boolean>(false);
-
-    const scrollViewRef = useRef<ScrollView | null>(null);
+export default function Announcements() {
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
+    const isAdmin = user?.role === "admin";
+    const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(SEED_ANNOUNCEMENTS);
+    const [draft, setDraft] = useState("");
 
-    const aiLogic = () => {
+    const sorted = useMemo(
+        () => [...announcements].sort((a, b) => b.createdAt - a.createdAt),
+        [announcements]
+    );
 
-        setChats(prev => (
-            [
-                ...prev,
-                {
-                    role: "ai",
-                    content: "Can't help you with that."
-                },
-            ]
-        ));
+    const post = useCallback(() => {
 
-        setThinking(false);
+    }, [draft]);
 
-    }
-
-    const onEndEditing = () => {
-
-        if (inputText === "" || thinking) return;
-
-        setChats(prev => (
-            [
-                ...prev,
-                {
-                    role: "user",
-                    content: inputText
-                },
-            ]
-        ));
-
-        setChatting(true);
-        setInputText("");
-        setThinking(true);
-        
-        Keyboard.dismiss();
-        // scrollViewRef.current?.scrollToEnd({ animated: true });
-
-        setTimeout(aiLogic, 5000);
-
-    }
-
-    const onPressOption = (option: string) => {
-
-        setChats(prev => (
-            [
-                ...prev,
-                {
-                    role: "user",
-                    content: option
-                },
-            ]
-        ));
-        
-        setChatting(true);
-        setThinking(true);
-
-        setTimeout(aiLogic, 5000);
-
-    }
+    const canPost = draft.trim().length > 0;
 
     return (
         <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
-            <Image source={require("../../assets/images/radial-gradient.png")} style={{ width: "100%", height: "100%", position: "absolute" }} contentFit="cover" />
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
-                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain"/>
+                <Image
+                    source={require("../../assets/images/logo-svg.svg")}
+                    style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }}
+                    contentFit="contain"
+                />
                 <View>
-                    <Text className="font-lexend-semibold text-[20px]">WTTIN<Text className="font-lexend-light"> AI</Text></Text>
+                    <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
+                    <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
-                <Image source={require("../../assets/images/bell-pin.svg")} style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }} contentFit="contain" />
+                {/* <Image
+                    source={require("../../assets/images/bell-pin.svg")}
+                    style={{ width: 37, height: 37, marginLeft: "auto", marginRight: 10 }}
+                    contentFit="contain"
+                /> */}
             </View>
-            {
-                chatting &&
-                <Animated.View entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))} className="flex-1 mb-[120px]">
-                    <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-                        {
-                            chats?.map((chat, key) => (
-                                <Message role={chat.role} content={chat.content} key={key}/>
-                            ))
-                        }
-                        {
-                            thinking && <Thinking/>
-                        }
-                    </ScrollView> 
-                </Animated.View>
-            }
-            {
-                !chatting && <Animated.View exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))} className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col justify-center items-center">
-                    <Image source={require("../../assets/images/chatbot.svg")} style={{ width: 83, height: 83, marginBottom: 20 }} contentFit="contain" />
-                    <Text className="text-center font-lexend-semibold text-[20px]">Hello, how can I help you?</Text>
-                    <Text className="text-center text-[12px] mt-[5px] opacity-60">Choose a prompt below or write your </Text>
-                    <Text className="text-center text-[12px] opacity-60">own to start chatting.</Text>
-                    <View className="flex flex-row justify-between items-center mt-[10px]">
-                        <Pressable onPress={() => onPressOption("Nearby resources")}>
-                            <View className="w-[140px] h-[77px] bg-[#FFFFFFB2] mr-[15px] rounded-[5px] border-solid border-[2px] border-black/10 flex justify-center items-center">
-                                <Text className="text-[12px]">Nearby Resources</Text>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                className="flex-1"
+                keyboardVerticalOffset={0}
+            >
+                <View className="mt-[10px]"></View>
+                <ScrollView
+                    contentContainerStyle={{ paddingBottom: 85, paddingHorizontal: 10 }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {isAdmin && (
+                        <View className="mb-[20px]">
+                            <Text className="font-lexend-semibold text-[18px] mb-[10px] ml-[2px]">New announcement</Text>
+                            <View
+                                className="bg-white rounded-[12px] px-[14px] py-[12px]"
+                                style={{
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }}
+                            >
+                                <TextInput
+                                    value={draft}
+                                    onChangeText={setDraft}
+                                    placeholder="Write an announcement for the community…"
+                                    placeholderTextColor="rgba(0,0,0,0.35)"
+                                    multiline
+                                    textAlignVertical="top"
+                                    className="font-lexend-medium text-[15px] min-h-[100px]"
+                                    style={{ minHeight: 100 }}
+                                />
+                                <View className="mt-[12px]">
+                                    <PostButton onPress={post} disabled={!canPost} />
+                                </View>
                             </View>
-                        </Pressable>
-                            <Pressable onPress={() => onPressOption("Nearby shelter")}>
-                            <View className="w-[140px] h-[77px] bg-[#FFFFFFB2] rounded-[5px] border-solid border-[2px] border-black/10 flex justify-center items-center">
-                                <Text className="text-[12px]">Nearby Shelter</Text>
-                            </View>
-                        </Pressable>
-                    </View>
-                </Animated.View>
-            }
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="absolute bottom-[85px] w-[100%] px-[25px]">
-                <View className="w-full h-[42px] rounded-[10px] border-[2px] border-black/10 bg-white/70 flex flex-row items-center pl-[13px] pr-[5px] mb-[10px]">
-                    <TextInput onChangeText={(value) => setInputText(value)} value={inputText} onEndEditing={onEndEditing} placeholder="Ask a question" style={{ fontSize: 14, flex: 1 }}/>
-                    <Pressable onPress={onEndEditing}>
-                        <Image source={require("../../assets/images/send.svg")} style={{ width: 31, height: 31 }} contentFit="contain"/>
-                    </Pressable>
-                </View>
+                        </View>
+                    )}
+                    <Text className="font-lexend-semibold text-[18px] mb-[12px] ml-[2px]">Announcements</Text>
+                    {sorted.length === 0 ? (
+                        <Text className="font-lexend-medium text-[14px] opacity-50 ml-[2px]">No announcements yet.</Text>
+                    ) : (
+                        sorted.map((item) => <AnnouncementCard key={item.id} item={item} />)
+                    )}
+                </ScrollView>
             </KeyboardAvoidingView>
         </View>
     );

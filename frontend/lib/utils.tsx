@@ -2,7 +2,10 @@ export const clamp = (value: number, min: number, max: number): number => {
     return Math.min(Math.max(value, min), max);
 }
 
-export const hoursToString = (hours: Record<Weekday, [String, String] | null>) => {
+export const hoursToString = (hours: Record<Weekday, [String, String] | null> | null | undefined) => {
+    if (hours == null || typeof hours !== "object") {
+        return "";
+    }
     let str = "";
     for (const key of Object.keys(hours)) {
         if (!hours[key as Weekday]) {
@@ -15,7 +18,10 @@ export const hoursToString = (hours: Record<Weekday, [String, String] | null>) =
     return str;
 }
 
-export const isOpen = (hours: Record<Weekday, [String, String] | null>, day: Weekday, time: string) => {
+export const isOpen = (hours: Record<Weekday, [String, String] | null> | null | undefined, day: Weekday, time: string) => {
+    if (hours == null || typeof hours !== "object") {
+        return false;
+    }
     const todayHours = hours[day];
     if (!todayHours) return false;
     const openAt = Number(todayHours[0].slice(0, 2));

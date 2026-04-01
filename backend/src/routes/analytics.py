@@ -6,7 +6,11 @@ from src.config.database import MongoDB
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
-db = MongoDB.get_collection("analytics")
+
+
+def _analytics_collection():
+    return MongoDB.get_collection("analytics")
+
 
 class EventBody(BaseModel):
     id: str
@@ -18,6 +22,7 @@ class EventBody(BaseModel):
 @router.post("/event")
 async def event(body: EventBody):
     try:
+        db = _analytics_collection()
         await db.update_one({ "id": body.id }, { "$push": { "events": body.event }}, upsert=True)
         return { "status": "success" }
     except Exception as e:
