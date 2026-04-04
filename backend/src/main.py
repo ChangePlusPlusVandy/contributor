@@ -16,7 +16,7 @@ from src.utils.util_routes import router as util_routes
 from src.admin.routes import router as admin_router
 from src.routes.resource_routes import router as resource_router
 from src.routes.resource_helper_routes import router as resource_helper_router
-from src.routes.messaging_routes import router as messaging_router
+from src.routes.announcement_routes import router as announcement_router
 from src.routes.analytics import router as analytics_router
 
 logger = get_logger(__name__)
