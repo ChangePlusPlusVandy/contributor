@@ -159,11 +159,22 @@ def extract_field_data(raw_data):
         'add': add
     }
     
+    # subcategory: first non-empty answer from q35, q36, q37, q39, q40, q41
+    subcategory_keys = ['q35_subcategoryUnder', 'q36_typeA36', 'q37_subcategoryUnder37',
+                        'q39_subcategoryUnder39', 'q40_subcategoryUnder40', 'q41_subcategoryUnder41']
+    subcategory = next((raw_data[k] for k in subcategory_keys if raw_data.get(k)), None)
+
+    # group: first non-empty answer from q42 - q71
+    group_keys = ['q42_groupUnder'] + [f'q{n}_groupUnder{n}' for n in range(43, 72)]
+    group = next((raw_data[k] for k in group_keys if raw_data.get(k)), None)
+
     # Add optional fields if they exist and are not empty
     optional_fields = {
         'updated_name': raw_data.get('q22_upatedOrgName'),
         'page': raw_data.get('q11_pageNumber'),
         'category': raw_data.get('q27_category'),
+        'subcategory': subcategory,
+        'group': group,
         'bus_line': raw_data.get('q28_busLine'),
         'hours': raw_data.get('q17_hoursOpen'),
         'services': raw_data.get('q18_services'),
