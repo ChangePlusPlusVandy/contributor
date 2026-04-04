@@ -286,6 +286,8 @@ class TestFormSubmission:
             "q8_yourOrganization": unique_org_name(),
             "q9_editOrAdd": "adding a new resource",
             "q27_category": "Urgent Needs",
+            "q35_subcategoryUnder": "Food",
+            "q42_groupUnder": "SNAP"
         }
 
         response = client.post("/resources/form",
@@ -314,6 +316,8 @@ class TestApproveSubmission:
             "q8_yourOrganization": org_name,
             "q9_editOrAdd": "adding a new resource",
             "q27_category": "Urgent Needs",
+            "q35_subcategoryUnder": "Food",
+            "q42_groupUnder": "SNAP"
         }
 
         form_response = client.post("/resources/form",
@@ -351,6 +355,8 @@ class TestDenySubmission:
             "q8_yourOrganization": org_name,
             "q9_editOrAdd": "adding a new resource",
             "q27_category": "Urgent Needs",
+            "q35_subcategoryUnder": "Food",
+            "q42_groupUnder": "SNAP"
         }
 
         form_response = client.post("/resources/form",
