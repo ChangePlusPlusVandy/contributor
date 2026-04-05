@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleProp, ViewStyle, ScrollView, Dimensions } from "react-native";
+import { View, Text, Pressable, StyleProp, ViewStyle, ScrollView, Dimensions, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
@@ -97,7 +97,7 @@ const DefaultMorePage = () => {
                     <Text className="font-lexend-semibold text-[18px] mt-[18px] mb-[10px]">Register a Resource</Text>
                     <View className="flex flex-row items-center">
                         <View style={{ flex: 1 }}>
-                            <Button>
+                            <Button onClick={() => Linking.openURL("https://form.jotform.com/jessehaovanderbilt/register-a-resource")}>
                                 <View className="h-[135px] bg-white rounded-[5px] gap flex flex-row items-center justify-center" style={{
                                     shadowColor: "#000",
                                     shadowOffset: { width: 2, height: 2 },
