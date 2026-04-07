@@ -21,7 +21,12 @@ export default function VendorList() {
 
     useEffect(() => {
         makeRequest("admin/vendors").then(data => {
-            if (!data.error) setVendors(data.vendors ?? []);
+            if (!data.error) {
+                const sorted = (data.vendors ?? []).sort((a: Vendor, b: Vendor) =>
+                    (b.is_clocked_in ? 1 : 0) - (a.is_clocked_in ? 1 : 0)
+                );
+                setVendors(sorted);
+            }
             setLoading(false);
         });
     }, []);
