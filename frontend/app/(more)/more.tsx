@@ -29,7 +29,7 @@ const Button = ({ children, onClick }: { children: ReactNode, onClick?: () => vo
 
 const DefaultMorePage = () => {
 
-    const { user, setUser } = useAuth();
+    const { user } = useAuth();
     const insets = useSafeAreaInsets();
     const router = useRouter();
 
@@ -127,8 +127,9 @@ const NASHVILLE_FALLBACK = {
 
 const VendorMorePage = () => {
 
-    const { user, setUser } = useAuth();
+    const { user, logout } = useAuth();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
     const mapRef = useRef<MapView | null>(null);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [editingLocation, setEditingLocation] = useState<boolean>(false);
@@ -325,8 +326,19 @@ const VendorMorePage = () => {
                                 </Button>
                             </View>
                         </View>
-                        <Button onClick={() => setUser(null)}>
+                        <Button onClick={() => router.push("/(more)/change-password")}>
                             <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={{
+                                shadowColor: "#000",
+                                shadowOffset: { width: 2, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                            }}>
+                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
+                            </View>
+                        </Button>
+                        <Button onClick={logout}>
+                            <View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={{
                                 shadowColor: "#000",
                                 shadowOffset: { width: 2, height: 2 },
                                 shadowOpacity: 0.2,
@@ -345,12 +357,12 @@ const VendorMorePage = () => {
 
 const AdminMorePage = () => {
 
-    const { user, setUser } = useAuth();
+    const { logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     return (
         <View style={{ paddingTop: insets.top, flex: 1 }}>
-            <Button onClick={() => setUser(null)}>
+            <Button onClick={logout}>
                 <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center mx-[24px]" style={{
                     shadowColor: "#000",
                     shadowOffset: { width: 2, height: 2 },
@@ -368,7 +380,7 @@ const AdminMorePage = () => {
 
 export default function More() {
 
-    const { user, setUser } = useAuth();
+    const { user } = useAuth();
     const pages: Record<string, ReactNode> = {
         "vendor": <VendorMorePage/>,
         "admin": <AdminMorePage/>,

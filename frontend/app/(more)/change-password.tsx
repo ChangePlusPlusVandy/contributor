@@ -3,22 +3,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useState } from "react";
-import { useAuth } from "@/providers/auth";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { config } from "@/lib/env";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function Login() {
+export default function ChangePassword() {
 
-    const { setUser } = useAuth();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { role } = useLocalSearchParams<{ role: string }>();
 
-    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [confirm, setConfirm] = useState("");
     const [loading, setLoading] = useState(false);
 
     const buttonScale = useSharedValue(1);
@@ -26,45 +23,42 @@ export default function Login() {
         transform: [{ scale: buttonScale.value }],
     }));
 
-    const isAdmin = role === "admin";
-
-    const saveAuthAndNavigate = async (role: "admin" | "vendor", tokens: { access_token: string, refresh_token: string }, user: User) => {
-        await SecureStore.setItemAsync("auth", JSON.stringify({
-            role,
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-        }));
-        setUser(user);
-        router.back();
-    };
-
-    const handleLogin = async () => {
-        if (!username || !password) {
+    const handleChangePassword = async () => {
+        if (!password || !confirm) {
             Alert.alert("Error", "Please fill in all fields.");
+            return;
+        }
+        if (password !== confirm) {
+            Alert.alert("Error", "Passwords do not match.");
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters.");
             return;
         }
 
         setLoading(true);
         try {
-            if (isAdmin) {
-                const res = await fetch(`${config.API_URL}admin/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: username, password }),
-                });
-                const data = await res.json();
-                if (!res.ok) { Alert.alert("Login Failed", data.detail || "Invalid credentials."); return; }
-                await saveAuthAndNavigate("admin", data, { email: data.admin.email, name: data.admin.name, role: "admin" });
-            } else {
-                const res = await fetch(`${config.API_URL}auth/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ vendor_id: username, password }),
-                });
-                const data = await res.json();
-                if (!res.ok) { Alert.alert("Login Failed", data.detail || "Invalid credentials."); return; }
-                await saveAuthAndNavigate("vendor", data, { email: data.user.vendor_id, name: data.user.name, role: "vendor" });
-            }
+            const store = await SecureStore.getItemAsync("auth");
+            if (!store) { Alert.alert("Error", "Not logged in."); return; }
+            const auth = JSON.parse(store);
+
+            const res = await fetch(`${config.API_URL}auth/change-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
+                body: JSON.stringify({ password }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) { Alert.alert("Error", data.detail || "Failed to change password."); return; }
+
+            await SecureStore.setItemAsync("auth", JSON.stringify({
+                role: auth.role,
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token,
+            }));
+
+            Alert.alert("Success", "Password changed successfully.", [{ text: "OK", onPress: () => router.back() }]);
         } finally {
             setLoading(false);
         }
@@ -86,26 +80,22 @@ export default function Login() {
                         <Text className="font-lexend-bold text-[28px] text-[#2B84E9]">WTTIN</Text>
                     </View>
 
-                    <Text className="font-lexend-semibold text-[20px] mb-[24px]">
-                        {isAdmin ? "Admin Login" : "Vendor Login"}
-                    </Text>
+                    <Text className="font-lexend-semibold text-[20px] mb-[24px]">Change Password</Text>
 
-                    <Text className="font-lexend-medium text-[14px] mb-[6px] opacity-60">{isAdmin ? "Username" : "4-Digit Pin"}</Text>
-                    <TextInput
-                        value={username}
-                        onChangeText={setUsername}
-                        placeholder={isAdmin ? "Enter username" : "Enter pin"}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType={isAdmin ? "default" : "numeric"}
-                        className="font-lexend-regular text-[16px] border border-gray-300 rounded-[8px] px-[14px] py-[12px] mb-[16px]"
-                    />
-
-                    <Text className="font-lexend-medium text-[14px] mb-[6px] opacity-60">Password</Text>
+                    <Text className="font-lexend-medium text-[14px] mb-[6px] opacity-60">New Password</Text>
                     <TextInput
                         value={password}
                         onChangeText={setPassword}
-                        placeholder="Enter password"
+                        placeholder="Enter new password"
+                        secureTextEntry
+                        className="font-lexend-regular text-[16px] border border-gray-300 rounded-[8px] px-[14px] py-[12px] mb-[16px]"
+                    />
+
+                    <Text className="font-lexend-medium text-[14px] mb-[6px] opacity-60">Confirm Password</Text>
+                    <TextInput
+                        value={confirm}
+                        onChangeText={setConfirm}
+                        placeholder="Confirm new password"
                         secureTextEntry
                         className="font-lexend-regular text-[16px] border border-gray-300 rounded-[8px] px-[14px] py-[12px] mb-[28px]"
                     />
@@ -113,22 +103,19 @@ export default function Login() {
                     <AnimatedPressable
                         onPressIn={() => { buttonScale.value = withSpring(0.95, { stiffness: 900, damping: 90, mass: 6 }); }}
                         onPressOut={() => { buttonScale.value = withSpring(1, { stiffness: 900, damping: 90, mass: 6 }); }}
-                        onPress={handleLogin}
+                        onPress={handleChangePassword}
                         disabled={loading}
                     >
                         <Animated.View
                             style={[buttonStyle, {
-                                backgroundColor: isAdmin ? "#1a1a1a" : "#F5C542",
+                                backgroundColor: "#F5C542",
                                 borderRadius: 25,
                                 paddingVertical: 14,
                                 alignItems: "center",
                             }]}
                         >
-                            <Text
-                                className="font-lexend-semibold text-[16px]"
-                                style={{ color: isAdmin ? "#fff" : "#1a1a1a" }}
-                            >
-                                {isAdmin ? "Sign in as Admin" : "Sign in as Vendor"}
+                            <Text className="font-lexend-semibold text-[16px]" style={{ color: "#1a1a1a" }}>
+                                Change Password
                             </Text>
                         </Animated.View>
                     </AnimatedPressable>
