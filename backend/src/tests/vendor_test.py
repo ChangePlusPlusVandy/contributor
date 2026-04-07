@@ -22,7 +22,7 @@ class TestVendorLogin:
 
     def test_login_missing_password(self, client):
         response = client.post("/auth/login", json={"vendor_id": TEST_VENDOR_ID})
-        assert response.status_code in [200, 404]
+        assert response.status_code == 422
 
     def test_login_vendor_not_found(self, client):
         response = client.post("/auth/login", json={"vendor_id": "ZZZZ", "password": TEST_PASSWORD})
@@ -33,18 +33,18 @@ class TestVendorLogin:
         assert response.status_code in [401, 404]
 
 
-class TestSetPassword:
-    def test_set_password_missing_fields(self, client):
-        response = client.post("/auth/set-password", json={"vendor_id": TEST_VENDOR_ID})
-        assert response.status_code == 422
+class TestChangePassword:
+    def test_change_password_no_token(self, client):
+        response = client.post("/auth/change-password", json={"password": TEST_PASSWORD})
+        assert response.status_code in [401, 403]
 
-    def test_set_password_short_password(self, client):
-        response = client.post("/auth/set-password", json={"vendor_id": TEST_VENDOR_ID, "password": "123"})
-        assert response.status_code == 422
+    def test_change_password_short_password(self, client):
+        response = client.post("/auth/change-password", json={"password": "123"}, headers={"Authorization": "Bearer invalid_token"})
+        assert response.status_code == 401
 
-    def test_set_password_vendor_not_found(self, client):
-        response = client.post("/auth/set-password", json={"vendor_id": "ZZZZ", "password": TEST_PASSWORD})
-        assert response.status_code == 404
+    def test_change_password_invalid_token(self, client):
+        response = client.post("/auth/change-password", json={"password": TEST_PASSWORD}, headers={"Authorization": "Bearer invalid_token"})
+        assert response.status_code == 401
 
 
 class TestProtectedRoutes:
