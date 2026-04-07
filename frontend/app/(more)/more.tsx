@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { useApi } from "@/lib/api";
+import { useApi, useAuthApi } from "@/lib/api";
 import { useAuth } from "@/providers/auth";
 import MapView, { LatLng, MapPressEvent, Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -131,10 +131,12 @@ const VendorMorePage = () => {
     const { user, logout } = useAuth();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { makeRequest } = useAuthApi();
     const mapRef = useRef<MapView | null>(null);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [editingLocation, setEditingLocation] = useState<boolean>(false);
     const [pickedLocation, setPickedLocation] = useState<LatLng | null>(null);
+    const [isClockedIn, setIsClockedIn] = useState(false);
 
     const CLOCK_IN_LOCATION_KEY = "clock_in_location";
 
@@ -195,6 +197,20 @@ const VendorMorePage = () => {
         const newLocation = e.nativeEvent.coordinate;
         setPickedLocation(newLocation);
         saveLocationToSecureStore(newLocation);
+        makeRequest("auth/location", {
+            method: "PATCH",
+            body: JSON.stringify({ latitude: newLocation.latitude, longitude: newLocation.longitude }),
+        });
+    };
+
+    const handleClockIn = async () => {
+        const data = await makeRequest("auth/clock-in", { method: "POST" });
+        if (!data.error) setIsClockedIn(true);
+    };
+
+    const handleClockOut = async () => {
+        const data = await makeRequest("auth/clock-out", { method: "POST" });
+        if (!data.error) setIsClockedIn(false);
     };
 
     useFocusEffect(
@@ -207,6 +223,9 @@ const VendorMorePage = () => {
             }
             getCurrentLocation();
             loadLocationFromSecureStore();
+            makeRequest("auth/me").then(data => {
+                if (data.user) setIsClockedIn(data.user.is_clocked_in ?? false);
+            });
         }, [])
     );
 
@@ -278,6 +297,10 @@ const VendorMorePage = () => {
                                             const newLoc = e.nativeEvent.coordinate;
                                             setPickedLocation(newLoc);
                                             saveLocationToSecureStore(newLoc);
+                                            makeRequest("auth/location", {
+                                                method: "PATCH",
+                                                body: JSON.stringify({ latitude: newLoc.latitude, longitude: newLoc.longitude }),
+                                            });
                                         }}
                                     />
                                 )}
@@ -296,17 +319,43 @@ const VendorMorePage = () => {
                                 <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Edit Clock-In Location</Text>
                             </Animated.View>
                         </Button>
-                        <Button onClick={() => null}>
-                            <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                        {isClockedIn ? (
+                            <Animated.View className="h-[33px] mt-[12px] rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                backgroundColor: "#16a34a",
                                 shadowColor: "#000",
                                 shadowOffset: { width: 2, height: 2 },
                                 shadowOpacity: 0.2,
                                 shadowRadius: 4,
                                 elevation: 4,
                             }]}>
-                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Clock-In</Text>
+                                <Text className="font-lexend-medium text-[13px] text-white">Clocked In ✓</Text>
                             </Animated.View>
-                        </Button>
+                        ) : (
+                            <Button onClick={handleClockIn}>
+                                <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }]}>
+                                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Clock In</Text>
+                                </Animated.View>
+                            </Button>
+                        )}
+                        {isClockedIn && (
+                            <Button onClick={handleClockOut}>
+                                <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }]}>
+                                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#E53935]">Clock Out</Text>
+                                </Animated.View>
+                            </Button>
+                        )}
                     </View>
                     <Animated.View style={contentFadeStyle}>
                         <Text className="font-lexend-semibold text-[18px] mt-[12px] mb-[10px]">Request Printed Guide</Text>
