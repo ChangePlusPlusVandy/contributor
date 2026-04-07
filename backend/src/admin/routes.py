@@ -1,9 +1,12 @@
+import os
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from supabase_auth.errors import AuthApiError
 from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, VendorCreateRequest
 from src.admin.middleware import get_current_admin
 from src.config.database import get_admin_collection, get_vendor_users_collection, supabase, supabase_admin
+
+VENDOR_TEMP_PASSWORD = os.getenv("VENDOR_TEMP_PASSWORD")
 
 router = APIRouter(prefix="/admin", tags=["Admins"])
 
@@ -72,13 +75,23 @@ async def create_vendor(data: VendorCreateRequest, current_admin: dict = Depends
     if await vendors.find_one({"vendor_id": data.vendor_id}):
         raise HTTPException(status_code=400, detail="Vendor ID already exists")
 
-    await vendors.insert_one({
-        "vendor_id": data.vendor_id,
-        "name": data.name,
-        "supabase_id": None,
-        "password_set": False,
-        "role": "vendor"
-    })
+    internal_email = f"v{data.vendor_id}@internal.contributor"
+    try:
+        auth_response = supabase.auth.sign_up({"email": internal_email, "password": VENDOR_TEMP_PASSWORD})
+        supabase_id = auth_response.user.id
+    except AuthApiError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        await vendors.insert_one({
+            "vendor_id": data.vendor_id,
+            "name": data.name,
+            "supabase_id": supabase_id,
+            "role": "vendor"
+        })
+    except Exception:
+        supabase_admin.auth.admin.delete_user(supabase_id)
+        raise HTTPException(status_code=500, detail="Vendor creation failed")
 
     return {"message": "Vendor created successfully", "vendor": {"vendor_id": data.vendor_id, "name": data.name}}
 
