@@ -1,4 +1,3 @@
-import { useApi } from "@/lib/api";
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
@@ -7,6 +6,7 @@ import { config } from "@/lib/env";
 type AuthContextType = {
     user: User | null;
     setUser: (user: User | null) => void;
+    logout: () => Promise<void>;
     loaded: boolean;
 };
 
@@ -27,13 +27,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             const auth: AuthStore = JSON.parse(store);
             try {
-                const res = await axios.get(`${config.API_URL}${auth.role == "admin" ? "admin" : "auth"}/me`, {
+                const res = await axios.get(`${config.API_URL}${auth.role === "admin" ? "admin" : "auth"}/me`, {
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
                 });
-                const { supabase_id, ...userData } = res.data.admin;
-                setUser(userData);
-            } 
-            finally {
+                const payload = auth.role === "admin" ? res.data.admin : res.data.user;
+                const { supabase_id, password_set, vendor_id, ...rest } = payload;
+                setUser(auth.role === "vendor" ? { ...rest, email: vendor_id } : rest);
+            } catch {
+                await SecureStore.deleteItemAsync("auth");
+            } finally {
                 setLoaded(true);
             }
         }
@@ -41,8 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     }, [])
 
+    const logout = async () => {
+        await SecureStore.deleteItemAsync("auth");
+        setUser(null);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, setUser, loaded }}>
+        <AuthContext.Provider value={{ user, setUser, logout, loaded }}>
             {children}
         </AuthContext.Provider>
     );
