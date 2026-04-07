@@ -72,13 +72,23 @@ async def create_vendor(data: VendorCreateRequest, current_admin: dict = Depends
     if await vendors.find_one({"vendor_id": data.vendor_id}):
         raise HTTPException(status_code=400, detail="Vendor ID already exists")
 
-    await vendors.insert_one({
-        "vendor_id": data.vendor_id,
-        "name": data.name,
-        "supabase_id": None,
-        "password_set": False,
-        "role": "vendor"
-    })
+    internal_email = f"v{data.vendor_id}@internal.contributor"
+    try:
+        auth_response = supabase.auth.sign_up({"email": internal_email, "password": "temp123"})
+        supabase_id = auth_response.user.id
+    except AuthApiError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        await vendors.insert_one({
+            "vendor_id": data.vendor_id,
+            "name": data.name,
+            "supabase_id": supabase_id,
+            "role": "vendor"
+        })
+    except Exception:
+        supabase_admin.auth.admin.delete_user(supabase_id)
+        raise HTTPException(status_code=500, detail="Vendor creation failed")
 
     return {"message": "Vendor created successfully", "vendor": {"vendor_id": data.vendor_id, "name": data.name}}
 
