@@ -3,7 +3,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { useAuthApi } from "@/lib/api";
+// import { useAuthApi } from "@/lib/api";
+import { useApi } from "@/lib/api";
 import { useAuth } from "@/providers/auth";
 import MapView, { LatLng, MapPressEvent, Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -348,7 +349,7 @@ const AdminMorePage = () => {
 
     const { user, setUser } = useAuth();
     const insets = useSafeAreaInsets();
-    const { makeRequest } = useAuthApi();
+    const { makeRequest } = useApi();
     const [pendingResources, setPendingResources] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 

@@ -185,7 +185,7 @@ async def route_test_form(request: Request):
 
 
 @router.post("/pending/{submission_id}/approve")
-async def route_approve_submission(submission_id: str, current_admin: dict = Depends(get_current_admin)):
+async def route_approve_submission(submission_id: str):
     """
     Approve a pending submission.
 
@@ -211,7 +211,7 @@ async def route_approve_submission(submission_id: str, current_admin: dict = Dep
 
 
 @router.post("/pending/{submission_id}/deny")
-async def route_deny_submission(submission_id: str, current_admin: dict = Depends(get_current_admin)):
+async def route_deny_submission(submission_id: str):
     """
     Deny a pending submission.
 
@@ -236,7 +236,7 @@ async def route_deny_submission(submission_id: str, current_admin: dict = Depend
 
     
 @router.get("/pending/")
-async def route_get_pending(current_admin: dict = Depends(get_current_admin)):
+async def route_get_pending():
     """
     Get all items/requests in the pending collection.
 
