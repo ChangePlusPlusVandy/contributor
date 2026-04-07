@@ -371,8 +371,13 @@ const AdminMorePage = () => {
 
     return (
         <View style={{ paddingTop: insets.top, flex: 1 }} className="px-[24px]">
-            <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
+            <Button onClick={() => router.push("/(more)/vendor-list")}>
                 <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">View Vendors</Text>
+                </View>
+            </Button>
+            <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
+                <View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
                     <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
                 </View>
             </Button>
