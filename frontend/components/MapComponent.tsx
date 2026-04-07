@@ -1,5 +1,5 @@
-import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet} from "react-native";
+import MapView, { Marker, Callout } from 'react-native-maps';
+import { StyleSheet, View, Text } from "react-native";
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import ResourceModal from './ResourceModal';
@@ -24,7 +24,7 @@ function resourceForModal(r: Resource): Resource & { latitude: number; longitude
     return { ...r, ...legacy, latitude, longitude };
 }
 
-export default function MapComponent({ mapData, location, animateTo }: { mapData: Resource[], location: Location.LocationObject | null, animateTo: { longitude: number, latitude: number } | null }) {
+export default function MapComponent({ mapData, activeVendors, location, animateTo }: { mapData: Resource[], activeVendors: ActiveVendor[], location: Location.LocationObject | null, animateTo: { longitude: number, latitude: number } | null }) {
 
     const [hasCentered, setHasCentered] = useState<boolean>(false);
     const mapRef = useRef<MapView | null>(null);
@@ -91,6 +91,20 @@ export default function MapComponent({ mapData, location, animateTo }: { mapData
 
                     })
                 }
+                {activeVendors.map((vendor) => (
+                    <Marker
+                        key={vendor.vendor_id}
+                        coordinate={{ latitude: vendor.location.latitude, longitude: vendor.location.longitude }}
+                        pinColor="#2B84E9"
+                    >
+                        <Callout>
+                            <View style={{ padding: 6, minWidth: 100 }}>
+                                <Text style={{ fontWeight: "600", fontSize: 13 }}>{vendor.name}</Text>
+                                <Text style={{ fontSize: 11, color: "#16a34a" }}>Clocked In</Text>
+                            </View>
+                        </Callout>
+                    </Marker>
+                ))}
             </MapView>
             {
                 modalResource && <ResourceModal modalResource={modalResource} closeModalResource={() => setModalResource(null)} location={location}/> 

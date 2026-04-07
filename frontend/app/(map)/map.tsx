@@ -139,6 +139,7 @@ const TopPanel = ({ resources, location, setAnimateTo }: { resources: Resource[]
 export default function Map() {
 
     const [mapData, setMapData] = useState<Resource[] | undefined>(undefined);
+    const [activeVendors, setActiveVendors] = useState<ActiveVendor[]>([]);
     const insets = useSafeAreaInsets();
 
     const [showFilter, setShowFilter] = useState<boolean>(false);
@@ -157,18 +158,19 @@ export default function Map() {
     const { makeRequest } = useApi();
 
     useEffect(() => {
-        makeRequest("resources/", {
-            method: "GET"
-        }).then((result) => {
-            if (result.error != null) {
-                setMapData([]);
-                return;
-            }
+        makeRequest("resources/", { method: "GET" }).then((result) => {
+            if (result.error != null) { setMapData([]); return; }
             const raw = result.resources;
-            const list = Array.isArray(raw) ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object"): [];
+            const list = Array.isArray(raw) ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object") : [];
             setMapData(list);
         });
     }, []);
+
+    useFocusEffect(useCallback(() => {
+        makeRequest("vendors/active").then((result) => {
+            if (!result.error) setActiveVendors(result.vendors ?? []);
+        });
+    }, []));
 
     const filteredMapData = useMemo(() => {
         if (!mapData) return [];
@@ -359,7 +361,7 @@ export default function Map() {
                                     </Animated.View>
                                 )
                             }
-                            <MapComponent mapData={filteredMapData} location={location} animateTo={animateTo}/>
+                            <MapComponent mapData={filteredMapData} activeVendors={activeVendors} location={location} animateTo={animateTo}/>
                         </View>
                     </>
                 )

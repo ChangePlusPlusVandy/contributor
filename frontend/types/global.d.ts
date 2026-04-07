@@ -39,6 +39,15 @@ declare global {
         name: string
     }
 
+    type ActiveVendor = {
+        vendor_id: string,
+        name: string,
+        location: {
+            latitude: number,
+            longitude: number
+        }
+    }
+
     type User = {
         email: string,
         name: string,

@@ -35,6 +35,10 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 
+class AdminChangePasswordRequest(BaseModel):
+    password: str = Field(..., min_length=6)
+
+
 class MongoVendor(BaseModel):
     supabase_id: str
     vendor_id: str
