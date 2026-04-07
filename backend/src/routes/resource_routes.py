@@ -1,6 +1,6 @@
 import os
 import sys
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 
 # Add the backend directory to sys.path so 'src' module can be found
@@ -20,6 +20,7 @@ from src.controllers.resource_controller import (
 )
 from src.config.database import get_resources_collection, get_pending_collection
 from src.config.logger import get_logger
+from src.admin.middleware import get_current_admin
 
 router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
@@ -184,7 +185,7 @@ async def route_test_form(request: Request):
 
 
 @router.post("/pending/{submission_id}/approve")
-async def route_approve_submission(submission_id: str):
+async def route_approve_submission(submission_id: str, current_admin: dict = Depends(get_current_admin)):
     """
     Approve a pending submission.
 
@@ -210,7 +211,7 @@ async def route_approve_submission(submission_id: str):
 
 
 @router.post("/pending/{submission_id}/deny")
-async def route_deny_submission(submission_id: str):
+async def route_deny_submission(submission_id: str, current_admin: dict = Depends(get_current_admin)):
     """
     Deny a pending submission.
 
@@ -235,7 +236,7 @@ async def route_deny_submission(submission_id: str):
 
     
 @router.get("/pending/")
-async def route_get_pending():
+async def route_get_pending(current_admin: dict = Depends(get_current_admin)):
     """
     Get all items/requests in the pending collection.
 

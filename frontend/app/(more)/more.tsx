@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useAuthApi } from "@/lib/api";
 import { useAuth } from "@/providers/auth";
 import MapView, { LatLng, MapPressEvent, Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -347,20 +348,91 @@ const AdminMorePage = () => {
 
     const { user, setUser } = useAuth();
     const insets = useSafeAreaInsets();
+    const { makeRequest } = useAuthApi();
+    const [pendingResources, setPendingResources] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchPending = async () => {
+        setLoading(true);
+        const result = await makeRequest("resources/pending/");
+        if (result.resources) {
+            setPendingResources(result.resources);
+        }
+        setLoading(false);
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchPending();
+        }, [])
+    );
+
+    const handleApprove = async (id: string) => {
+        const result = await makeRequest(`resources/pending/${id}/approve`, { method: "POST" });
+        if (!result.error) {
+            setPendingResources(prev => prev.filter(r => r._id !== id));
+        }
+    };
+
+    const handleDeny = async (id: string) => {
+        const result = await makeRequest(`resources/pending/${id}/deny`, { method: "POST" });
+        if (!result.error) {
+            setPendingResources(prev => prev.filter(r => r._id !== id));
+        }
+    };
 
     return (
         <View style={{ paddingTop: insets.top, flex: 1 }}>
-            <Button onClick={() => setUser(null)}>
-                <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center mx-[24px]" style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 2, height: 2 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 4,
-                    elevation: 4,
-                }}>
-                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
+            <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
+                <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
+                <View>
+                    <Text className="font-lexend-semibold text-[18px]">WHERE TO TURN</Text>
+                    <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
-            </Button>
+            </View>
+            <ScrollView className="h-full">
+                <View className="pt-[16px] px-[24px]">
+                    <Text className="font-lexend-semibold text-[18px] mb-[10px]">Pending Resources</Text>
+                    {loading && <Text className="font-lexend-medium opacity-60 text-[13px]">Loading...</Text>}
+                    {!loading && pendingResources.length === 0 && (
+                        <Text className="font-lexend-medium opacity-60 text-[13px]">No pending resources.</Text>
+                    )}
+                    {pendingResources.map(resource => (
+                        <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={{
+                            shadowColor: "#000",
+                            shadowOffset: { width: 2, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 4,
+                        }}>
+                            <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.name}</Text>
+                            <View className="flex flex-row gap-[8px]">
+                                <Button onClick={() => handleApprove(resource._id)}>
+                                    <View className="h-[33px] px-[16px] bg-[#2B84E9] rounded-[10px] flex items-center justify-center">
+                                        <Text className="font-lexend-medium text-[13px] text-white">Approve</Text>
+                                    </View>
+                                </Button>
+                                <Button onClick={() => handleDeny(resource._id)}>
+                                    <View className="h-[33px] px-[16px] bg-white border border-[#E0E0E0] rounded-[10px] flex items-center justify-center">
+                                        <Text className="font-lexend-medium text-[13px] text-[#E53935]">Deny</Text>
+                                    </View>
+                                </Button>
+                            </View>
+                        </View>
+                    ))}
+                    <Button onClick={() => setUser(null)}>
+                        <View className="h-[33px] mt-[8px] mb-[24px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={{
+                            shadowColor: "#000",
+                            shadowOffset: { width: 2, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 4,
+                        }}>
+                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
+                        </View>
+                    </Button>
+                </View>
+            </ScrollView>
         </View>
     );
 }
