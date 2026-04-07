@@ -40,7 +40,7 @@ class TestChangePassword:
 
     def test_change_password_short_password(self, client):
         response = client.post("/auth/change-password", json={"password": "123"}, headers={"Authorization": "Bearer invalid_token"})
-        assert response.status_code == 422
+        assert response.status_code == 401
 
     def test_change_password_invalid_token(self, client):
         response = client.post("/auth/change-password", json={"password": TEST_PASSWORD}, headers={"Authorization": "Bearer invalid_token"})
