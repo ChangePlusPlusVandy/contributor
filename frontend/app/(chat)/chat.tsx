@@ -1,14 +1,21 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { Image } from "expo-image";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { useApi, useAuthApi } from "@/lib/api";
 
 type AnnouncementItem = {
     id: string;
-    body: string;
+    content: string;
     createdAt: number;
+};
+
+type AnnouncementApiItem = {
+    id: string;
+    content: string;
+    created_at: string;
 };
 
 const PostButton = ({ onPress, disabled }: { onPress: () => void; disabled: boolean }) => {
@@ -67,36 +74,56 @@ const AnnouncementCard = ({ item }: { item: AnnouncementItem }) => {
             }}
         >
             <Text className="font-lexend-medium text-[12px] opacity-50 mb-[8px]">{dateLabel}</Text>
-            <Text className="font-lexend-medium text-[15px] leading-[22px]">{item.body}</Text>
+            <Text className="font-lexend-medium text-[15px] leading-[22px]">{item.content}</Text>
         </View>
     );
 };
-
-const SEED_ANNOUNCEMENTS: AnnouncementItem[] = [
-    {
-        id: "seed-1",
-        body: "Welcome to Where to Turn in Nashville. Check back here for updates on resources and community news.",
-        createdAt: Date.now() - 86400000 * 2,
-    },
-];
 
 export default function Announcements() {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const isAdmin = user?.role === "admin";
-    const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(SEED_ANNOUNCEMENTS);
+    const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
     const [draft, setDraft] = useState("");
+    const [posting, setPosting] = useState(false);
+    const { makeRequest: publicRequest } = useApi();
+    const { makeRequest: authRequest } = useAuthApi();
+
+    useEffect(() => {
+        publicRequest("announcements/getAll").then(data => {
+            if (data.error) return;
+            const items = (data.announcements as AnnouncementApiItem[]).map(a => ({
+                id: a.id,
+                content: a.content,
+                createdAt: new Date(a.created_at).getTime(),
+            }));
+            setAnnouncements(items);
+        });
+    }, []);
 
     const sorted = useMemo(
         () => [...announcements].sort((a, b) => b.createdAt - a.createdAt),
         [announcements]
     );
 
-    const post = useCallback(() => {
-
+    const post = useCallback(async () => {
+        const trimmed = draft.trim();
+        if (!trimmed) return;
+        setPosting(true);
+        try {
+            const data = await authRequest("announcements/create", {
+                method: "POST",
+                body: JSON.stringify({ content: trimmed }),
+            });
+            if (data.error) { Alert.alert("Error", data.error); return; }
+            setAnnouncements(prev => [...prev, { id: data.id, content: trimmed, createdAt: new Date(data.created_at).getTime() }]);
+            setDraft("");
+        } finally {
+            setPosting(false);
+        }
     }, [draft]);
 
-    const canPost = draft.trim().length > 0;
+    const canPost = draft.trim().length > 0 && !posting;
 
     return (
         <View className="bg-[#F8F8F8] flex-1" style={{ paddingTop: insets.top }}>
@@ -126,6 +153,7 @@ export default function Announcements() {
                     contentContainerStyle={{ paddingBottom: 85, paddingHorizontal: 10 }}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
                 >
                     {isAdmin && (
                         <View className="mb-[20px]">

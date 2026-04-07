@@ -359,17 +359,25 @@ const AdminMorePage = () => {
 
     const { logout } = useAuth();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+
+    const buttonStyle = {
+        shadowColor: "#000",
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    };
 
     return (
-        <View style={{ paddingTop: insets.top, flex: 1 }}>
+        <View style={{ paddingTop: insets.top, flex: 1 }} className="px-[24px]">
+            <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
+                <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
+                </View>
+            </Button>
             <Button onClick={logout}>
-                <View className="h-[33px] mt-[18px] bg-white rounded-[10px] flex flex-row items-center justify-center mx-[24px]" style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 2, height: 2 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 4,
-                    elevation: 4,
-                }}>
+                <View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
                     <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
                 </View>
             </Button>
