@@ -377,9 +377,15 @@ const AdminMorePage = () => {
 
     const handleDeny = async (id: string) => {
         const result = await makeRequest(`resources/pending/${id}/deny`, { method: "POST" });
-        if (!result.error) {
-            setPendingResources(prev => prev.filter(r => r._id !== id));
-        }
+        if (!result.error) setPendingResources(prev => prev.filter(r => r._id !== id));
+    };
+
+    const buttonStyle = {
+        shadowColor: "#000",
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
     };
 
     return (
@@ -399,13 +405,7 @@ const AdminMorePage = () => {
                         <Text className="font-lexend-medium opacity-60 text-[13px]">No pending resources.</Text>
                     )}
                     {pendingResources.map(resource => (
-                        <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={{
-                            shadowColor: "#000",
-                            shadowOffset: { width: 2, height: 2 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 4,
-                            elevation: 4,
-                        }}>
+                        <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={buttonStyle}>
                             <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.name}</Text>
                             <View className="flex flex-row gap-[8px]">
                                 <Button onClick={() => handleApprove(resource._id)}>
