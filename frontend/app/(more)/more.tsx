@@ -471,7 +471,7 @@ const AdminMorePage = () => {
 
     const getResourceFields = (resource: any): [string, unknown][] => [
         ['Action', resource.add ? 'Add New Resource' : 'Edit Existing Resource'],
-        ...Object.entries(resource).filter(([key, value]) => key !== 'add' && value !== null && value !== 'null'),
+        ...Object.entries(resource).filter(([key, value]) => key !== 'add' && key !== '_id' && value !== null && value !== 'null'),
     ];
 
     return (
