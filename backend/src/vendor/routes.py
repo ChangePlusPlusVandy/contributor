@@ -110,7 +110,26 @@ async def set_vendor_location(data: VendorLocationRequest, user: dict = Depends(
     return {"message": "Location updated"}
 
 
-@vendor_public_router.get("/active", status_code=status.HTTP_200_OK)
+@router.post("/debug/reset-password/{vendor_id}", status_code=status.HTTP_200_OK)
+async def debug_reset_vendor_password(vendor_id: str, data: VendorChangePasswordRequest):
+    """Debug endpoint to reset a vendor's password using service account (no auth required)"""
+    return {}
+    vendors = get_vendor_users_collection()
+    vendor = await vendors.find_one({"vendor_id": vendor_id}, {"_id": 0})
+    
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    supabase_id = vendor.get("supabase_id")
+    
+    try:
+        supabase_admin.auth.admin.update_user_by_id(supabase_id, {"password": data.password})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+    
+    return {"message": "Password reset successfully", "vendor_id": vendor_id}
+
+
 async def get_active_vendors():
     vendors = get_vendor_users_collection()
     active = await vendors.find(

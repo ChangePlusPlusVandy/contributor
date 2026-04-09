@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleProp, ViewStyle, ScrollView, Dimensions, Linking } from "react-native";
+import { View, Text, Pressable, StyleProp, ViewStyle, ScrollView, Dimensions, Linking, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
@@ -413,6 +413,7 @@ const AdminMorePage = () => {
     const { makeRequest } = useApi();
     const [pendingResources, setPendingResources] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [syncLoading, setSyncLoading] = useState(false);
 
     const fetchPending = async () => {
         setLoading(true);
@@ -433,6 +434,25 @@ const AdminMorePage = () => {
         if (!result.error) setPendingResources(prev => prev.filter(r => r._id !== id));
     };
 
+    const handleSyncResources = async () => {
+        if (syncLoading) return;
+        setSyncLoading(true);
+        try {
+            const result = await makeRequest("sync_resources", { method: "GET" });
+            if (!result.error && result.status === "success") {
+                Alert.alert("Resources synced.")
+                await fetchPending();
+            }
+            else {
+                throw new Error(result.error || "an error occurred.");
+            }
+        } catch (error) {
+            Alert.alert("Error syncing resources: " + error);
+        } finally {
+            setSyncLoading(false);
+        }
+    };
+
     const buttonStyle = {
         shadowColor: "#000",
         shadowOffset: { width: 2, height: 2 },
@@ -442,7 +462,7 @@ const AdminMorePage = () => {
     };
 
     return (
-        <View style={{ paddingTop: insets.top, flex: 1 }}>
+        <View style={{ paddingTop: insets.top, flex: 1 }} className="flex">
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
                 <Image source={require("../../assets/images/logo-svg.svg")} style={{ width: 42, height: 42, marginLeft: 11, marginRight: 10 }} contentFit="contain" />
                 <View>
@@ -450,46 +470,73 @@ const AdminMorePage = () => {
                     <Text className="font-lexend-semibold text-[18px]">IN NASHVILLE</Text>
                 </View>
             </View>
-            <ScrollView className="h-full">
-                <View className="pt-[16px] px-[24px]">
-                    <Button onClick={() => router.push("/(more)/vendor-list")}>
-                        <View className="h-[33px] bg-white rounded-[10px] flex flex-row items-center justify-center mb-[10px]" style={buttonStyle}>
-                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">View Vendors</Text>
-                        </View>
-                    </Button>
-                    <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
-                        <View className="h-[33px] bg-white rounded-[10px] flex flex-row items-center justify-center mb-[16px]" style={buttonStyle}>
-                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
-                        </View>
-                    </Button>
-                    <Text className="font-lexend-semibold text-[18px] mb-[10px]">Pending Resources</Text>
-                    {loading && <Text className="font-lexend-medium opacity-60 text-[13px]">Loading...</Text>}
-                    {!loading && pendingResources.length === 0 && (
-                        <Text className="font-lexend-medium opacity-60 text-[13px]">No pending resources.</Text>
-                    )}
-                    {pendingResources.map(resource => (
-                        <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={buttonStyle}>
-                            <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.name}</Text>
-                            <View className="flex flex-row gap-[8px]">
-                                <Button onClick={() => handleApprove(resource._id)}>
-                                    <View className="h-[33px] px-[16px] bg-[#2B84E9] rounded-[10px] flex items-center justify-center">
-                                        <Text className="font-lexend-medium text-[13px] text-white">Approve</Text>
-                                    </View>
-                                </Button>
-                                <Button onClick={() => handleDeny(resource._id)}>
-                                    <View className="h-[33px] px-[16px] bg-white border border-[#E0E0E0] rounded-[10px] flex items-center justify-center">
-                                        <Text className="font-lexend-medium text-[13px] text-[#E53935]">Deny</Text>
-                                    </View>
-                                </Button>
+            <ScrollView className="flex-1">
+                <View className="pt-[16px] px-[24px] flex-1 flex flex-col justify-between">
+                    <View className="flex flex-col justify-around">
+                        <Button onClick={() => router.push("/(more)/vendor-list")}>
+                            <View className="h-[33px] bg-white mb-[15px] rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">View Vendors</Text>
                             </View>
-                        </View>
-                    ))}
-                    <Button onClick={logout}>
-                        <View className="h-[33px] mt-[8px] mb-[24px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
-                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
-                        </View>
-                    </Button>
+                        </Button>
+                        <Button onClick={handleSyncResources}>
+                            <View className="h-[33px] bg-white rounded-[10px] mb-[15px] flex flex-row items-center justify-center" style={buttonStyle}>
+                                {syncLoading ? (
+                                    <ActivityIndicator color="#2B84E9" />
+                                ) : (
+                                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Sync Resources</Text>
+                                )}
+                            </View>
+                        </Button>
+                        <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
+                            <View className="h-[33px] mb-[15px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
+                            </View>
+                        </Button>
+                        <Button onClick={logout}>
+                            <View className="h-[33px] mb-[15px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
+                            </View>
+                        </Button>
+                    </View>
+                    <View>
+                        <Text className="font-lexend-semibold text-[18px] mb-[10px]">Pending Resources</Text>
+                        {loading && <ActivityIndicator color="black"/>}
+                        {!loading && pendingResources.length === 0 && (
+                            <Text className="font-lexend-medium opacity-60 text-[13px]">No pending resources.</Text>
+                        )}
+                        {
+                            !loading &&
+                            <>
+                                {pendingResources.map(resource => (
+                                    <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={buttonStyle}>
+                                        <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.org_name}</Text>
+                                        <View className="mb-[10px]">
+                                            {Object.entries(resource).map(([key, value]) => (
+                                                <View key={key} className="mb-[6px]">
+                                                    <Text className="font-lexend-medium text-[12px] text-[#666]">{key}:</Text>
+                                                    <Text className="font-lexend text-[12px]">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                        <View className="flex flex-row gap-[8px]">
+                                            <Button onClick={() => handleApprove(resource._id)}>
+                                                <View className="h-[33px] px-[16px] bg-[#2B84E9] rounded-[10px] flex items-center justify-center">
+                                                    <Text className="font-lexend-medium text-[13px] text-white">Approve</Text>
+                                                </View>
+                                            </Button>
+                                            <Button onClick={() => handleDeny(resource._id)}>
+                                                <View className="h-[33px] px-[16px] bg-white border border-[#E0E0E0] rounded-[10px] flex items-center justify-center">
+                                                    <Text className="font-lexend-medium text-[13px] text-[#E53935]">Deny</Text>
+                                                </View>
+                                            </Button>
+                                        </View>
+                                    </View>
+                                ))}
+                            </>
+                        }
+                    </View>
                 </View>
+                <View className="h-[100px]"></View>
             </ScrollView>
         </View>
     );
