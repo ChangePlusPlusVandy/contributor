@@ -7,6 +7,7 @@ from supabase import create_client, Client
 
 load_dotenv()
 mongo_key = os.getenv("MONGODB_URI")
+DB_NAME = "the-contributor"
 
 # Supabase initialization
 supabase_url = os.getenv("SUPABASE_URL")
@@ -82,20 +83,16 @@ class MongoDB:
     
 # methods for getting certain collections
 def get_resources_collection():
-    """Get the "resources" collection in the "the-contributor" database."""
-    return MongoDB.get_collection("resources", "the-contributor")
+    return MongoDB.get_collection("resources", DB_NAME)
 
 def get_vendor_users_collection():
-    """Get the "vendors" collection in the "the-contributor" database."""
-    return MongoDB.get_collection("vendors", "the-contributor")
+    return MongoDB.get_collection("vendors", DB_NAME)
 
 def get_admin_collection():
-    """Get the "admins" collection in the "the-contributor" database."""
-    return MongoDB.get_collection("admins", "the-contributor")
+    return MongoDB.get_collection("admins", DB_NAME)
 
 def get_pending_collection():
-    """Get the "pending" collection in the "the-contributor" database."""
-    return MongoDB.get_collection("pending", "the-contributor")
+    return MongoDB.get_collection("pending", DB_NAME)
 
 def get_announcements_collection():
-    return MongoDB.get_collection("announcements", "the-contributor")
+    return MongoDB.get_collection("announcements", DB_NAME)
