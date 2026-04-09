@@ -527,7 +527,7 @@ const AdminMorePage = () => {
                                             {getResourceFields(resource).map(([key, value]) => (
                                                 <View key={key} className="mb-[6px]">
                                                     <Text className="font-lexend-medium text-[12px] text-[#666]">{key}:</Text>
-                                                    <Text className="font-lexend text-[12px]">{formatValue(key, value)}</Text>
+                                                    <Text className="font-lexend" style={{ fontSize: key === 'Action' ? 14 : 12 }}>{formatValue(key, value)}</Text>
                                                 </View>
                                             ))}
                                         </View>
