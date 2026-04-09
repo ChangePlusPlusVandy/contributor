@@ -192,7 +192,7 @@ const AdminHome = () => {
                 </View>
                 <Pressable onPress={() => router.push("/(more)/more")}>
                     <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
-                        <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">{numPendingResources}</Text> new resources awaitng for approval</Text>
+                        <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">{numPendingResources}</Text> new resources awaiting for approval</Text>
                     </View>
                 </Pressable>
                 <BookmarksLink />
