@@ -461,6 +461,19 @@ const AdminMorePage = () => {
         elevation: 4,
     };
 
+    const formatValue = (key: string, value: unknown): string => {
+        if (key === 'submitted_at' && typeof value === 'string')
+            return new Date(value).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" });
+        if (typeof value === 'object')
+            return JSON.stringify(value);
+        return String(value);
+    };
+
+    const getResourceFields = (resource: any): [string, unknown][] => [
+        ['Action', resource.add ? 'Add New Resource' : 'Edit Existing Resource'],
+        ...Object.entries(resource).filter(([key, value]) => key !== 'add' && value !== null && value !== 'null'),
+    ];
+
     return (
         <View style={{ paddingTop: insets.top, flex: 1 }} className="flex">
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
@@ -511,14 +524,10 @@ const AdminMorePage = () => {
                                     <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={buttonStyle}>
                                         <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.org_name}</Text>
                                         <View className="mb-[10px]">
-                                            {Object.entries(resource).filter(([, value]) => value !== null && value !== 'null').map(([key, value]) => (
+                                            {getResourceFields(resource).map(([key, value]) => (
                                                 <View key={key} className="mb-[6px]">
                                                     <Text className="font-lexend-medium text-[12px] text-[#666]">{key}:</Text>
-                                                    <Text className="font-lexend text-[12px]">
-                                                        {key === 'submitted_at' && typeof value === 'string'
-                                                            ? new Date(value).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" })
-                                                            : typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                    </Text>
+                                                    <Text className="font-lexend text-[12px]">{formatValue(key, value)}</Text>
                                                 </View>
                                             ))}
                                         </View>
