@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
@@ -128,7 +128,14 @@ export default function Login() {
                                 className="font-lexend-semibold text-[16px]"
                                 style={{ color: isAdmin ? "#fff" : "#1a1a1a" }}
                             >
-                                {isAdmin ? "Sign in as Admin" : "Sign in as Vendor"}
+                                {
+                                    loading ?
+                                    <ActivityIndicator color="white"/>
+                                    :
+                                    <>
+                                        {isAdmin ? "Sign in as Admin" : "Sign in as Vendor"}
+                                    </>
+                                }
                             </Text>
                         </Animated.View>
                     </AnimatedPressable>
