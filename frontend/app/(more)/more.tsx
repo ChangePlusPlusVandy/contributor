@@ -511,10 +511,14 @@ const AdminMorePage = () => {
                                     <View key={resource._id} className="bg-white rounded-[5px] p-[14px] mb-[10px]" style={buttonStyle}>
                                         <Text className="font-lexend-semibold text-[15px] mb-[10px]">{resource.org_name}</Text>
                                         <View className="mb-[10px]">
-                                            {Object.entries(resource).map(([key, value]) => (
+                                            {Object.entries(resource).filter(([, value]) => value !== null && value !== 'null').map(([key, value]) => (
                                                 <View key={key} className="mb-[6px]">
                                                     <Text className="font-lexend-medium text-[12px] text-[#666]">{key}:</Text>
-                                                    <Text className="font-lexend text-[12px]">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text>
+                                                    <Text className="font-lexend text-[12px]">
+                                                        {key === 'submitted_at' && typeof value === 'string'
+                                                            ? new Date(value).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" })
+                                                            : typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                    </Text>
                                                 </View>
                                             ))}
                                         </View>
