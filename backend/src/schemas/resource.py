@@ -60,7 +60,7 @@ class SubCategoryChoices(str, Enum):
     JOBS = "Jobs + Job Training"
     ADULT_EDU = "Adult Education"
     ARTS = "Arts"
-    TRANSPORATION = "Transporation"
+    TRANSPORTATION = "Transportation"
 
 class GroupChoices(str, Enum):
     # Food
@@ -220,9 +220,9 @@ class ResourceBase(BaseModel):
 
     # optional
     page: int | None = None
-    category: CategoryChoices | None
-    subcategory: SubCategoryChoices | None
-    group: GroupChoices | None
+    category: CategoryChoices | None = None
+    subcategory: SubCategoryChoices | None = None
+    group: GroupChoices | None = None 
     bus_line: str | None = None
     hours: str | None = None
     services: str | None = None
