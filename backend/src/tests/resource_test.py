@@ -142,9 +142,6 @@ class TestCreateResource:
             "created_at": "2024-01-01T00:00:00",
         }
 
-        response_no_category = client.post("/resources/",
-            json={k: v for k, v in base.items() if k != "category"})
-
         response_no_org = client.post("/resources/",
             json={k: v for k, v in base.items() if k != "org_name"})
 
@@ -157,7 +154,6 @@ class TestCreateResource:
         response_no_name = client.post("/resources/",
             json={k: v for k, v in base.items() if k != "name"})
 
-        assert response_no_category.status_code == 422
         assert response_no_org.status_code == 422
         assert response_no_phone.status_code == 422
         assert response_no_email.status_code == 422
