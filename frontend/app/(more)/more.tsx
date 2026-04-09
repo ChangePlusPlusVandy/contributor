@@ -491,7 +491,7 @@ const AdminMorePage = () => {
                                 <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">View Vendors</Text>
                             </View>
                         </Button>
-                        <Button onClick={handleSyncResources}>
+                        {/* <Button onClick={handleSyncResources}>
                             <View className="h-[33px] bg-white rounded-[10px] mb-[15px] flex flex-row items-center justify-center" style={buttonStyle}>
                                 {syncLoading ? (
                                     <ActivityIndicator color="#2B84E9" />
@@ -499,7 +499,7 @@ const AdminMorePage = () => {
                                     <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Sync Resources</Text>
                                 )}
                             </View>
-                        </Button>
+                        </Button> */}
                         <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
                             <View className="h-[33px] mb-[15px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
                                 <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
