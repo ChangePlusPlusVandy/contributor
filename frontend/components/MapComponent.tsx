@@ -86,7 +86,7 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                             key={key}
                             coordinate={{ latitude, longitude }}
                             calloutOffset={{ x: 0.0, y: -50.0 }}
-                            onPress={() => setModalResource(resourceForModal(resource))}
+                            onPress={() => { setModalResource(resourceForModal(resource)) }}
                         />
 
                     })
