@@ -19,7 +19,7 @@ export function Layout() {
         return null;
     }
     return (
-        <NativeTabs minimizeBehavior='automatic' backgroundColor={"#ffffff"}>
+        <NativeTabs minimizeBehavior='automatic' backgroundColor={"#ffffff"} blurEffect="none" disableTransparentOnScrollEdge>
             <NativeTabs.Trigger name="(home)">
                 <Icon sf={{ default: 'house', selected: 'house.fill' }} />
                 <Label>Home</Label>

@@ -3,8 +3,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, Easing } from "react-native-reanimated";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+<<<<<<< HEAD
 // import { useAuthApi } from "@/lib/api";
 import { useApi } from "@/lib/api";
+=======
+import { useApi, useAuthApi } from "@/lib/api";
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
 import { useAuth } from "@/providers/auth";
 import MapView, { LatLng, MapPressEvent, Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -131,10 +135,16 @@ const VendorMorePage = () => {
 
     const { user, setUser } = useAuth();
     const insets = useSafeAreaInsets();
+<<<<<<< HEAD
+=======
+    const router = useRouter();
+    const { makeRequest } = useAuthApi();
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
     const mapRef = useRef<MapView | null>(null);
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [editingLocation, setEditingLocation] = useState<boolean>(false);
     const [pickedLocation, setPickedLocation] = useState<LatLng | null>(null);
+    const [isClockedIn, setIsClockedIn] = useState(false);
 
     const CLOCK_IN_LOCATION_KEY = "clock_in_location";
 
@@ -195,6 +205,20 @@ const VendorMorePage = () => {
         const newLocation = e.nativeEvent.coordinate;
         setPickedLocation(newLocation);
         saveLocationToSecureStore(newLocation);
+        makeRequest("auth/location", {
+            method: "PATCH",
+            body: JSON.stringify({ latitude: newLocation.latitude, longitude: newLocation.longitude }),
+        });
+    };
+
+    const handleClockIn = async () => {
+        const data = await makeRequest("auth/clock-in", { method: "POST" });
+        if (!data.error) setIsClockedIn(true);
+    };
+
+    const handleClockOut = async () => {
+        const data = await makeRequest("auth/clock-out", { method: "POST" });
+        if (!data.error) setIsClockedIn(false);
     };
 
     useFocusEffect(
@@ -207,6 +231,9 @@ const VendorMorePage = () => {
             }
             getCurrentLocation();
             loadLocationFromSecureStore();
+            makeRequest("auth/me").then(data => {
+                if (data.user) setIsClockedIn(data.user.is_clocked_in ?? false);
+            });
         }, [])
     );
 
@@ -278,6 +305,10 @@ const VendorMorePage = () => {
                                             const newLoc = e.nativeEvent.coordinate;
                                             setPickedLocation(newLoc);
                                             saveLocationToSecureStore(newLoc);
+                                            makeRequest("auth/location", {
+                                                method: "PATCH",
+                                                body: JSON.stringify({ latitude: newLoc.latitude, longitude: newLoc.longitude }),
+                                            });
                                         }}
                                     />
                                 )}
@@ -296,17 +327,43 @@ const VendorMorePage = () => {
                                 <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Edit Clock-In Location</Text>
                             </Animated.View>
                         </Button>
-                        <Button onClick={() => null}>
-                            <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                        {isClockedIn ? (
+                            <Animated.View className="h-[33px] mt-[12px] rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                backgroundColor: "#16a34a",
                                 shadowColor: "#000",
                                 shadowOffset: { width: 2, height: 2 },
                                 shadowOpacity: 0.2,
                                 shadowRadius: 4,
                                 elevation: 4,
                             }]}>
-                                <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Clock-In</Text>
+                                <Text className="font-lexend-medium text-[13px] text-white">Clocked In ✓</Text>
                             </Animated.View>
-                        </Button>
+                        ) : (
+                            <Button onClick={handleClockIn}>
+                                <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }]}>
+                                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Clock In</Text>
+                                </Animated.View>
+                            </Button>
+                        )}
+                        {isClockedIn && (
+                            <Button onClick={handleClockOut}>
+                                <Animated.View className="h-[33px] mt-[12px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={[contentFadeStyle, {
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }]}>
+                                    <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#E53935]">Clock Out</Text>
+                                </Animated.View>
+                            </Button>
+                        )}
                     </View>
                     <Animated.View style={contentFadeStyle}>
                         <Text className="font-lexend-semibold text-[18px] mt-[12px] mb-[10px]">Request Printed Guide</Text>
@@ -349,6 +406,10 @@ const AdminMorePage = () => {
 
     const { user, setUser } = useAuth();
     const insets = useSafeAreaInsets();
+<<<<<<< HEAD
+=======
+    const router = useRouter();
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
     const { makeRequest } = useApi();
     const [pendingResources, setPendingResources] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -356,6 +417,7 @@ const AdminMorePage = () => {
     const fetchPending = async () => {
         setLoading(true);
         const result = await makeRequest("resources/pending/");
+<<<<<<< HEAD
         if (result.resources) {
             setPendingResources(result.resources);
         }
@@ -373,6 +435,17 @@ const AdminMorePage = () => {
         if (!result.error) {
             setPendingResources(prev => prev.filter(r => r._id !== id));
         }
+=======
+        if (result.resources) setPendingResources(result.resources);
+        setLoading(false);
+    };
+
+    useFocusEffect(useCallback(() => { fetchPending(); }, []));
+
+    const handleApprove = async (id: string) => {
+        const result = await makeRequest(`resources/pending/${id}/approve`, { method: "POST" });
+        if (!result.error) setPendingResources(prev => prev.filter(r => r._id !== id));
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
     };
 
     const handleDeny = async (id: string) => {
@@ -399,6 +472,19 @@ const AdminMorePage = () => {
             </View>
             <ScrollView className="h-full">
                 <View className="pt-[16px] px-[24px]">
+<<<<<<< HEAD
+=======
+                    <Button onClick={() => router.push("/(more)/vendor-list")}>
+                        <View className="h-[33px] bg-white rounded-[10px] flex flex-row items-center justify-center mb-[10px]" style={buttonStyle}>
+                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">View Vendors</Text>
+                        </View>
+                    </Button>
+                    <Button onClick={() => router.push({ pathname: "/(more)/change-password", params: { role: "admin" } })}>
+                        <View className="h-[33px] bg-white rounded-[10px] flex flex-row items-center justify-center mb-[16px]" style={buttonStyle}>
+                            <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Change Password</Text>
+                        </View>
+                    </Button>
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
                     <Text className="font-lexend-semibold text-[18px] mb-[10px]">Pending Resources</Text>
                     {loading && <Text className="font-lexend-medium opacity-60 text-[13px]">Loading...</Text>}
                     {!loading && pendingResources.length === 0 && (
@@ -421,6 +507,7 @@ const AdminMorePage = () => {
                             </View>
                         </View>
                     ))}
+<<<<<<< HEAD
                     <Button onClick={() => setUser(null)}>
                         <View className="h-[33px] mt-[8px] mb-[24px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={{
                             shadowColor: "#000",
@@ -429,6 +516,10 @@ const AdminMorePage = () => {
                             shadowRadius: 4,
                             elevation: 4,
                         }}>
+=======
+                    <Button onClick={logout}>
+                        <View className="h-[33px] mt-[8px] mb-[24px] bg-white rounded-[10px] flex flex-row items-center justify-center" style={buttonStyle}>
+>>>>>>> f71b49279cb683316f8a7416776ed28049fa1316
                             <Text className="font-lexend-medium opacity-60 text-[13px] w-full text-center text-[#2B84E9]">Logout</Text>
                         </View>
                     </Button>

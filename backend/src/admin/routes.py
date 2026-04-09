@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from supabase_auth.errors import AuthApiError
-from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, VendorCreateRequest
+from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, AdminChangePasswordRequest, VendorCreateRequest
 from src.admin.middleware import get_current_admin
 from src.config.database import get_admin_collection, get_vendor_users_collection, supabase, supabase_admin
 
@@ -67,6 +67,16 @@ async def admin_login(body: AdminLoginRequest):
 async def get_current_admin_profile(current_admin: dict = Depends(get_current_admin)):
     return {"admin": current_admin}
 
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def admin_change_password(body: AdminChangePasswordRequest, current_admin: dict = Depends(get_current_admin)):
+    supabase_id = current_admin["supabase_id"]
+    try:
+        supabase_admin.auth.admin.update_user_by_id(supabase_id, {"password": body.password})
+    except AuthApiError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    auth_response = supabase.auth.sign_in_with_password({"email": current_admin["email"], "password": body.password})
+    return {"access_token": auth_response.session.access_token, "refresh_token": auth_response.session.refresh_token}
 
 
 @router.post("/vendors", status_code=status.HTTP_201_CREATED)

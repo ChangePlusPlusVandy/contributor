@@ -3,9 +3,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useState } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { config } from "@/lib/env";
+import { useAuthApi } from "@/lib/api";
+import { useAuth } from "@/providers/auth";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -13,6 +14,9 @@ export default function ChangePassword() {
 
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { role } = useLocalSearchParams<{ role: string }>();
+    const { makeRequest } = useAuthApi();
+    const { user } = useAuth();
 
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
@@ -39,21 +43,12 @@ export default function ChangePassword() {
 
         setLoading(true);
         try {
-            const store = await SecureStore.getItemAsync("auth");
-            if (!store) { Alert.alert("Error", "Not logged in."); return; }
-            const auth = JSON.parse(store);
-
-            const res = await fetch(`${config.API_URL}auth/change-password`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.accessToken}` },
-                body: JSON.stringify({ password }),
-            });
-            const data = await res.json();
-
-            if (!res.ok) { Alert.alert("Error", data.detail || "Failed to change password."); return; }
+            const endpoint = role === "admin" ? "admin/change-password" : "auth/change-password";
+            const data = await makeRequest(endpoint, { method: "POST", body: JSON.stringify({ password }) });
+            if (data.error) { Alert.alert("Error", data.error); return; }
 
             await SecureStore.setItemAsync("auth", JSON.stringify({
-                role: auth.role,
+                role: user!.role,
                 accessToken: data.access_token,
                 refreshToken: data.refresh_token,
             }));
