@@ -1,20 +1,36 @@
 import pytest
 from fastapi.testclient import TestClient
+from pymongo import MongoClient as SyncMongoClient
+from dotenv import load_dotenv
 import sys
 import os
 import uuid
 import json
 
+load_dotenv()
+
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import app
+import src.config.database as db_module
+
+TEST_DB = "the-contributor-test"
 
 # Test client fixture with lifespan support
 @pytest.fixture(scope="module")
 def client():
-    """Create test client with lifespan context"""
+    """Create test client pointed at the test database"""
+    db_module.DB_NAME = TEST_DB
     with TestClient(app) as test_client:
         yield test_client
+
+    sync_client = SyncMongoClient(os.getenv("MONGODB_URI"))
+    db = sync_client[TEST_DB]
+    db["resources"].delete_many({})
+    db["pending"].delete_many({})
+    sync_client.close()
+
+    db_module.DB_NAME = "the-contributor"
 
 def unique_org_name():
     """Generate unique org name for testing"""
