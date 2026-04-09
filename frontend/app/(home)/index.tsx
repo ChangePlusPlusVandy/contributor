@@ -4,10 +4,10 @@ import { Image } from "expo-image";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useAuth } from "@/providers/auth";
-import { router, useRouter } from "expo-router";
+import { router, useFocusEffect, useRouter } from "expo-router";
 import { Bookmark } from "lucide-react-native";
 import { useAuthApi } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 const SECTION_TO_CATEGORY: Record<string, Categories> = {
     "Urgent Needs": "Urgent Needs",
@@ -168,9 +168,9 @@ const AdminHome = () => {
         if (result.resources) setNumPendingResources(result.resources.length);
     };
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         fetchPending();
-    }, [])
+    }, []))
 
     return (
         <SafeAreaView className="bg-[#F8F8F8]">
@@ -192,7 +192,10 @@ const AdminHome = () => {
                 </View>
                 <Pressable onPress={() => router.push("/(more)/more")}>
                     <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
-                        <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">{numPendingResources}</Text> new resources awaiting for approval</Text>
+                        <Text className="text-[17px] font-lexend-medium">
+                            You have <Text className="text-[#2B84E9]">{numPendingResources}</Text> new 
+                            {numPendingResources == 1 ? " resource" : " resources"} awaiting for approval
+                        </Text>
                     </View>
                 </Pressable>
                 <BookmarksLink />
