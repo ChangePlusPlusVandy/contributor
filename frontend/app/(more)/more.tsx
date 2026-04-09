@@ -410,7 +410,7 @@ const AdminMorePage = () => {
     const { logout } = useAuth();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { makeRequest } = useApi();
+    const { makeRequest } = useAuthApi();
     const [pendingResources, setPendingResources] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [syncLoading, setSyncLoading] = useState(false);
