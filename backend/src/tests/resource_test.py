@@ -13,6 +13,7 @@ load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import app
 import src.config.database as db_module
+from src.admin.middleware import get_current_admin
 
 TEST_DB = "the-contributor-test"
 
@@ -20,9 +21,11 @@ TEST_DB = "the-contributor-test"
 @pytest.fixture(scope="module")
 def client():
     """Create test client pointed at the test database"""
+    app.dependency_overrides[get_current_admin] = lambda: {"name": "Test Admin", "email": "test@thecontributor.org", "role": "admin"}
     db_module.DB_NAME = TEST_DB
     with TestClient(app) as test_client:
         yield test_client
+    app.dependency_overrides.clear()
 
     sync_client = SyncMongoClient(os.getenv("MONGODB_URI"))
     db = sync_client[TEST_DB]
