@@ -137,3 +137,8 @@ async def get_active_vendors():
         {"_id": 0, "vendor_id": 1, "name": 1, "location": 1}
     ).to_list(length=None)
     return {"vendors": active}
+
+
+@vendor_public_router.get("/active", status_code=status.HTTP_200_OK)
+async def get_active_vendors_route():
+    return await get_active_vendors()
