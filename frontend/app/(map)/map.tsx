@@ -27,15 +27,16 @@ function resourceCoords(r: Resource): { latitude: number; longitude: number } | 
 }
 
 const CATEGORY_SUBCATEGORIES: Record<Categories, string[]> = {
-    "Urgent Needs": ["Food", "Personal Care", "Emergency Shelter", "Housing", "Rent + Utilities Assistance"],
-    "Health and Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes & Hospice", "Dental + Hearing", "HIV PrEP, & HEP C"],
-    "Family and Pets": ["Tutoring & Mentoring", "Childcare", "Family Support", "Pet Help"],
-    "Specialized Assistance and Help": [
-        "Tutoring & Mentoring", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated",
-        "Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "Identification", "Outside Davidson Country", "Phones"
+    "Urgent Needs": ["Food", "Emergency Shelter", "Housing", "Personal Care", "Rent + Utilities Assistance"],
+    "Health and Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes + Hospice", "Dental and Hearing", "HIV, PReP, & HEP C"],
+    "Family and Pets": ["Tutoring + Mentoring", "Childcare", "Family Support", "Pet Help"],
+    "Specialized Assistance": [
+        "Seniors + People with Disabilities", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated"
     ],
-    "Find Work": ["Jobs + Training", "Adult Education", "Arts", "Transportation"],
-    "Get Help": [""]
+    "Get Help": [
+        "Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "ID's, Birth Certificates & Social Services", "Outside of Davidson County"
+    ],
+    "Find Work": ["Phones", "Jobs + Job Training", "Adult Education", "Arts", "Transporation"]
 };
 
 const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
@@ -330,7 +331,7 @@ export default function Map() {
                                                 <FilterButton title="Family and Pets" isPressed={selectedCategory === "Family and Pets"} toggleFilter={toggleFilter} textSize={8} width={98} height={32} />
                                             </View>
                                             <View className="flex flex-row justify-left items-center mt-[7px] gap-[9px]">
-                                                <FilterButton title="Specialized Assistance and Help" isPressed={selectedCategory === "Specialized Assistance and Help"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
+                                                <FilterButton title="Specialized Assistance" isPressed={selectedCategory === "Specialized Assistance"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
                                                 <FilterButton title="Find Work" isPressed={selectedCategory === "Find Work"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
                                                 <FilterButton title="Get Help" isPressed={selectedCategory === "Get Help"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
                                             </View>

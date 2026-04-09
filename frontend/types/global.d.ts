@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 declare global {
 
     type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-    type Categories = "Urgent Needs" | "Health and Wellness" | "Family and Pets" | "Specialized Assistance and Help" | "Find Work" | "Get Help";
+    type Categories = "Urgent Needs" | "Health and Wellness" | "Family and Pets" | "Specialized Assistance" | "Find Work" | "Get Help";
 
     type Resource = {
         name: string;
