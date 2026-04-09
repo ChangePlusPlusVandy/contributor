@@ -96,11 +96,12 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                         key={vendor.vendor_id}
                         coordinate={{ latitude: vendor.location.latitude, longitude: vendor.location.longitude }}
                         pinColor="#2B84E9"
+                        calloutOffset={{ x: 0.0, y: -50.0 }}
                     >
-                        <Callout>
-                            <View style={{ padding: 6, minWidth: 100 }}>
+                        <Callout >
+                            <View style={{ padding: 6, minWidth: 100 }} className=''>
                                 <Text style={{ fontWeight: "600", fontSize: 13 }}>{vendor.name}</Text>
-                                <Text style={{ fontSize: 11, color: "#16a34a" }}>Clocked In</Text>
+                                <Text style={{ fontSize: 11, color: "#16a34a" }}>Clocked In - Get your Newspaper Here!</Text>
                             </View>
                         </Callout>
                     </Marker>

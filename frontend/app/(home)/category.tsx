@@ -65,7 +65,7 @@ export default function Category() {
             </View>
             {resources === undefined ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#d3d3d3ff" />
+                    <ActivityIndicator size="large" color="black" />
                 </View>
             ) : resources?.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-[24px]">
@@ -86,7 +86,7 @@ export default function Category() {
                             <ResourceModal
                                 absolute={false}
                                 modalResource={resource}
-                                closeModalResource={() => {}}
+                                closeModalResource={() => { }}
                                 location={location}
                             />
                         </View>

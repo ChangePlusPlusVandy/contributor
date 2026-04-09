@@ -151,6 +151,7 @@ export default function Map() {
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [animateTo, setAnimateTo] = useState<{ longitude: number, latitude: number } | null>(null);
     const [search, setSearch] = useState<string>("");
+    const [vendorsOnly, setVendorsOnly] = useState<boolean>(false);
 
     const onSearchChange = useCallback(debounce((val: string) => setSearch(val), 400), []);
     const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
@@ -177,7 +178,7 @@ export default function Map() {
 
         return mapData.filter((resource) => {
             if (resource == null || typeof resource !== "object") return false;
-            const name = resource.name ?? "";
+            const name = resource.org_name ?? "";
             const categoryMatch = selectedCategory !== null ? resource.category === selectedCategory : true;
 
             let subcategoryMatch = true;
@@ -318,6 +319,7 @@ export default function Map() {
                                             </View>
                                             <View className="flex flex-row justify-between items-center mt-[8px]">
                                                 <FilterButton title="ID Not Required" isPressed={idRequired} toggleOther={() => setIDRequired(v => !v)} width={145} height={35} />
+                                                <FilterButton title="Vendors Only" isPressed={vendorsOnly} toggleOther={() => setVendorsOnly(v => !v)} width={145} height={35} />
                                             </View>
                                             <View className="mt-[7px] h-[26px] flex items-center flex-row">
                                                 <Text className="font-lexend-medium text-[14px]">Category</Text>
@@ -361,7 +363,7 @@ export default function Map() {
                                     </Animated.View>
                                 )
                             }
-                            <MapComponent mapData={filteredMapData} activeVendors={activeVendors} location={location} animateTo={animateTo}/>
+                            <MapComponent mapData={vendorsOnly ? [] : filteredMapData} activeVendors={activeVendors} location={location} animateTo={animateTo}/>
                         </View>
                     </>
                 )

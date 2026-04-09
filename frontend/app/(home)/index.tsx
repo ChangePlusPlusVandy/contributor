@@ -4,8 +4,10 @@ import { Image } from "expo-image";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useAuth } from "@/providers/auth";
-import { useRouter } from "expo-router";
+import { router, useRouter } from "expo-router";
 import { Bookmark } from "lucide-react-native";
+import { useAuthApi } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 const SECTION_TO_CATEGORY: Record<string, Categories> = {
     "Urgent Needs": "Urgent Needs",
@@ -68,10 +70,6 @@ const ResourceSection = ({ title, resources }: { title: string, resources: Resou
             <Pressable>
                 <View className="flex w-full justify-between items-center flex-row">
                     <Text className="font-lexend-semibold text-[18px] mb-[12px]">{title}</Text>
-                    {
-                        (user && user.role == "admin") &&
-                        <Image source={require("@/assets/images/pencil.png")} contentFit="contain" style={{ width: 24, height: 24, marginRight: 2, marginBottom: 5 }}/>
-                    }
                 </View>
             </Pressable>
             <ScrollView
@@ -162,6 +160,18 @@ const AdminHome = () => {
     const { user } = useAuth();
     const isAdmin = user && user.role == "admin";
 
+    const { makeRequest } = useAuthApi();
+    const [numPendingResources, setNumPendingResources] = useState<number>(0);
+
+    const fetchPending = async () => {
+        const result = await makeRequest("resources/pending/");
+        if (result.resources) setNumPendingResources(result.resources.length);
+    };
+
+    useEffect(() => {
+        fetchPending();
+    }, [])
+
     return (
         <SafeAreaView className="bg-[#F8F8F8]">
             <View className="w-full flex justify-start items-center flex-row pb-[10px] mt-[7px] h-[45px]">
@@ -176,13 +186,15 @@ const AdminHome = () => {
                 contentContainerStyle={{ paddingBottom: 85 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="p-[10px] flex flex-row gap-3">
+                <View className="p-[10px] flex flex-row flex-wrap gap-3 truncate">
                     <Text className="text-[29px] font-lexend-bold">Welcome Back,</Text> 
                     <Text className="text-[29px] font-lexend-bold text-[#2B84E9]">{user?.name}</Text>
                 </View>
-                <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
-                    <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">2</Text> new resources awaitng for approval</Text>
-                </View>
+                <Pressable onPress={() => router.push("/(more)/more")}>
+                    <View className="mx-2 mt-[5px] mb-[20px] h-[66px] shadow-sm bg-white rounded-[20px] flex justify-center px-4">
+                        <Text className="text-[17px] font-lexend-medium">You have <Text className="text-[#2B84E9]">{numPendingResources}</Text> new resources awaitng for approval</Text>
+                    </View>
+                </Pressable>
                 <BookmarksLink />
                 <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
                 <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
