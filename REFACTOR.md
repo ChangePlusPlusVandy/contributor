@@ -217,3 +217,5 @@ The `(home)`, `(chat)`, `(map)`, `(more)` route groups map directly to Next.js r
 - [ ] Test PWA install on Android Chrome
 - [ ] Run Lighthouse audit — target PWA score ≥ 90, Performance ≥ 80
 - [ ] Verify responsive layout at mobile (375px), tablet (768px), and desktop (1280px) breakpoints
+
+test
