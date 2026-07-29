@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	html {
+		font-family: "Lexend", system-ui, sans-serif;
+	}
+	body {
+		background-color: #F8F8F8;
+		overscroll-behavior-y: none;
+	}
+}
+
+/* NativeWind's font-lexend-* classes set a per-weight font family;
+   on the web the same class names map to font-weight instead. */
+@layer utilities {
+	.font-lexend { font-family: "Lexend", sans-serif; font-weight: 400; }
+	.font-lexend-thin { font-family: "Lexend", sans-serif; font-weight: 100; }
+	.font-lexend-extralight { font-family: "Lexend", sans-serif; font-weight: 200; }
+	.font-lexend-light { font-family: "Lexend", sans-serif; font-weight: 300; }
+	.font-lexend-regular { font-family: "Lexend", sans-serif; font-weight: 400; }
+	.font-lexend-medium { font-family: "Lexend", sans-serif; font-weight: 500; }
+	.font-lexend-semibold { font-family: "Lexend", sans-serif; font-weight: 600; }
+	.font-lexend-bold { font-family: "Lexend", sans-serif; font-weight: 700; }
+	.font-lexend-extrabold { font-family: "Lexend", sans-serif; font-weight: 800; }
+	.font-lexend-black { font-family: "Lexend", sans-serif; font-weight: 900; }
+}
+
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.animate-fade-in {
+	animation: fade-in 300ms ease-in-out;
+}
+
+.leaflet-container {
+	font-family: inherit;
+}
