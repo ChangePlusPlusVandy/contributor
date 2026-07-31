@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import debounce from "lodash.debounce";
 import MapComponent, { resourceCoords } from "@/components/MapComponent";
 import ResourceModal from "@/components/ResourceModal";
@@ -23,16 +23,39 @@ const CATEGORY_SUBCATEGORIES: Record<Categories, string[]> = {
     "Find Work": ["Phones", "Jobs + Job Training", "Adult Education", "Arts", "Transporation"]
 };
 
-const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
+const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width?: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
+
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    // textSize is the starting size; long labels step down until they fit the button's box.
+    useLayoutEffect(() => {
+        const text = textRef.current;
+        const button = text?.parentElement;
+        if (!text || !button) return;
+
+        const fit = () => {
+            let size = textSize;
+            text.style.fontSize = `${size}px`;
+            while (size > 6 && (text.scrollHeight > button.clientHeight || text.scrollWidth > text.clientWidth)) {
+                size -= 0.5;
+                text.style.fontSize = `${size}px`;
+            }
+        };
+
+        fit();
+        const observer = new ResizeObserver(fit);
+        observer.observe(button);
+        return () => observer.disconnect();
+    }, [title, textSize]);
 
     return (
         <button
             type="button"
             onClick={() => { onPress?.(); toggleFilter?.(title as Categories); toggleOther?.(); }}
-            className="flex items-center justify-center rounded-[5px] shadow-[0_0_4px_rgba(0,0,0,0.25)] transition-[background-color,transform] duration-300 active:scale-90"
-            style={{ width, height, backgroundColor: isPressed ? "#2B84E999" : "#ffffff" }}
+            className="flex items-center justify-center rounded-[5px] px-[3px] shadow-[0_0_4px_rgba(0,0,0,0.25)] transition-[background-color,transform] duration-300 active:scale-90"
+            style={{ width: width ?? "100%", height, backgroundColor: isPressed ? "#2B84E999" : "#ffffff" }}
         >
-            <span className="font-lexend-medium text-center" style={{ fontSize: textSize }}>{title}</span>
+            <span ref={textRef} className="font-lexend-medium w-full text-center leading-tight" style={{ fontSize: textSize }}>{title}</span>
         </button>
     );
 
@@ -169,8 +192,8 @@ export default function MapPage() {
                     <div className="flex flex-row items-start">
                         <img src={pinFillIcon} alt="" className="h-[24px] w-[24px] self-start object-contain" />
                         <div className="mr-[3px]">
-                            <p className="font-lexend-medium text-right text-[14px] text-[#2B84E9]">Nashville, TN</p>
-                            <p className="font-lexend-medium -mt-[3px] text-right text-[10px] text-[#2B84E9]">Distance - {distance} miles</p>
+                            <p className="font-lexend-medium text-right text-[14px] leading-[17px] text-[#2B84E9]">Nashville, TN</p>
+                            <p className="font-lexend-medium -mt-[3px] text-right text-[10px] leading-[12px] text-[#2B84E9]">Distance - {distance} miles</p>
                         </div>
                         <button type="button" onClick={() => setShowFilter(prev => !prev)} aria-label="Toggle filters">
                             <img src={filterIcon} alt="" className="h-[24px] w-[24px] object-contain" />
@@ -219,28 +242,26 @@ export default function MapPage() {
                             <div className="mt-[7px] flex h-[26px] flex-row items-center">
                                 <p className="font-lexend-medium text-[14px]">Filter</p>
                             </div>
-                            <div className="mt-[8px] flex flex-row items-center justify-between">
-                                <FilterButton title="ID Not Required" isPressed={idRequired} toggleOther={() => setIDRequired(v => !v)} width={145} height={35} />
-                                <FilterButton title="Vendors Only" isPressed={vendorsOnly} toggleOther={() => setVendorsOnly(v => !v)} width={145} height={35} />
+                            <div className="mt-[8px] grid grid-cols-2 gap-[10px]">
+                                <FilterButton title="ID Not Required" isPressed={idRequired} toggleOther={() => setIDRequired(v => !v)} height={35} />
+                                <FilterButton title="Vendors Only" isPressed={vendorsOnly} toggleOther={() => setVendorsOnly(v => !v)} height={35} />
                             </div>
                             <div className="mt-[7px] flex h-[26px] flex-row items-center">
                                 <p className="font-lexend-medium text-[14px]">Category</p>
                             </div>
-                            <div className="mt-[8px] flex flex-row items-center justify-between">
-                                <FilterButton title="Urgent Needs" isPressed={selectedCategory === "Urgent Needs"} toggleFilter={toggleFilter} textSize={10} width={98} height={32} />
-                                <FilterButton title="Health and Wellness" isPressed={selectedCategory === "Health and Wellness"} toggleFilter={toggleFilter} textSize={8} width={98} height={32} />
-                                <FilterButton title="Family and Pets" isPressed={selectedCategory === "Family and Pets"} toggleFilter={toggleFilter} textSize={8} width={98} height={32} />
-                            </div>
-                            <div className="mt-[7px] flex flex-row items-center gap-[9px]">
-                                <FilterButton title="Specialized Assistance" isPressed={selectedCategory === "Specialized Assistance"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
-                                <FilterButton title="Find Work" isPressed={selectedCategory === "Find Work"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
-                                <FilterButton title="Get Help" isPressed={selectedCategory === "Get Help"} toggleFilter={toggleFilter} textSize={7} width={98} height={36} />
+                            <div className="mt-[8px] grid grid-cols-3 gap-[9px]">
+                                <FilterButton title="Urgent Needs" isPressed={selectedCategory === "Urgent Needs"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                <FilterButton title="Health and Wellness" isPressed={selectedCategory === "Health and Wellness"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                <FilterButton title="Family and Pets" isPressed={selectedCategory === "Family and Pets"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                <FilterButton title="Specialized Assistance" isPressed={selectedCategory === "Specialized Assistance"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                <FilterButton title="Find Work" isPressed={selectedCategory === "Find Work"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                <FilterButton title="Get Help" isPressed={selectedCategory === "Get Help"} toggleFilter={toggleFilter} textSize={10} height={36} />
                             </div>
                             {selectedCategory !== null && CATEGORY_SUBCATEGORIES[selectedCategory] && (
                                 <div className="mt-[12px]">
                                     <p className="font-lexend-medium mb-[8px] text-[14px]">Subcategory</p>
                                     <div className="animate-fade-in mb-[10px]">
-                                        <div className="flex flex-row flex-wrap" style={{ gap: 7 }}>
+                                        <div className="grid grid-cols-3 gap-[9px]">
                                             {CATEGORY_SUBCATEGORIES[selectedCategory].map((sub) => (
                                                 <FilterButton
                                                     key={`${selectedCategory}-${sub}`}
@@ -248,7 +269,6 @@ export default function MapPage() {
                                                     isPressed={subcategoryFilter === sub}
                                                     toggleOther={() => toggleSubcategory(sub)}
                                                     textSize={9}
-                                                    width={98}
                                                     height={28}
                                                 />
                                             ))}
