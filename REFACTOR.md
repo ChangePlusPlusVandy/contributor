@@ -138,83 +138,83 @@ The `(home)`, `(chat)`, `(map)`, `(more)` route groups become React Router route
 ## Checklist
 
 ### Project Setup
-- [ ] Initialize Vite project with React + TypeScript (`npm create vite@latest -- --template react-ts`)
-- [ ] Install and configure React Router
-- [ ] Configure Tailwind CSS
-- [ ] Install `@fontsource/lexend` and import all 9 weights in `main.tsx`
-- [ ] Set up environment variables (`VITE_API_URL` replacing Expo's config)
-- [ ] Install `lucide-react` (replaces `lucide-react-native`)
-- [ ] Set up path aliases (`@/` → `src/`) in `tsconfig.json` and `vite.config.ts`
+- [x] Initialize Vite project with React + TypeScript (`npm create vite@latest -- --template react-ts`)
+- [x] Install and configure React Router
+- [x] Configure Tailwind CSS
+- [x] Install `@fontsource/lexend` and import all 9 weights in `main.tsx`
+- [x] Set up environment variables (`VITE_API_URL` replacing Expo's config)
+- [x] Install `lucide-react` (replaces `lucide-react-native`)
+- [x] Set up path aliases (`@/` → `src/`) in `tsconfig.json` and `vite.config.ts`
 
 ### Backend (one-time, small)
-- [ ] Add `CORSMiddleware` to `backend/src/main.py` with the frontend origin — OR mount the built SPA via `StaticFiles` for same-origin serving
+- [x] Add `CORSMiddleware` to `backend/src/main.py` with the frontend origin — OR mount the built SPA via `StaticFiles` for same-origin serving
 - [ ] Verify a browser `fetch` from the dev server (`localhost:5173`) reaches the API
 
 ### PWA
-- [ ] Install and configure `vite-plugin-pwa`
-- [ ] Create `public/manifest.json` (name, icons, `display: standalone`, `start_url`)
-- [ ] Add PWA meta tags to `index.html` (viewport, theme-color, apple-mobile-web-app tags)
-- [ ] Generate app icons at required sizes (192x192, 512x512 minimum)
+- [x] Install and configure `vite-plugin-pwa`
+- [x] Create `public/manifest.json` (name, icons, `display: standalone`, `start_url`)
+- [x] Add PWA meta tags to `index.html` (viewport, theme-color, apple-mobile-web-app tags)
+- [x] Generate app icons at required sizes (192x192, 512x512 minimum)
 - [ ] Test "Add to Home Screen" on iOS Safari and Android Chrome
-- [ ] Configure service worker caching strategy for API routes vs static assets
+- [x] Configure service worker caching strategy for API routes vs static assets
 
 ### Routing & Layout
-- [ ] Recreate route structure: home, chat, map, more (React Router nested routes replacing the `(home)`, `(chat)`, `(map)`, `(more)` groups)
-- [ ] Build root layout with font, providers, and nav
-- [ ] Build responsive nav component (bottom bar on mobile, top nav on desktop)
-- [ ] Migrate `(home)/index.tsx` — three role-based views (admin, vendor, user)
-- [ ] Migrate `(home)/bookmarks.tsx`
-- [ ] Migrate `(home)/category.tsx`
-- [ ] Migrate `(chat)/chat.tsx` (announcements board)
-- [ ] Migrate `(map)/map.tsx`
-- [ ] Migrate `(more)/more.tsx` — three role-based views
-- [ ] Migrate `(more)/login.tsx`
-- [ ] Migrate `(more)/change-password.tsx`
-- [ ] Migrate `(more)/vendor-list.tsx`
+- [x] Recreate route structure: home, chat, map, more (React Router nested routes replacing the `(home)`, `(chat)`, `(map)`, `(more)` groups)
+- [x] Build root layout with font, providers, and nav
+- [x] Build responsive nav component (bottom bar on mobile, top nav on desktop)
+- [x] Migrate `(home)/index.tsx` — three role-based views (admin, vendor, user)
+- [x] Migrate `(home)/bookmarks.tsx`
+- [x] Migrate `(home)/category.tsx`
+- [x] Migrate `(chat)/chat.tsx` (announcements board)
+- [x] Migrate `(map)/map.tsx`
+- [x] Migrate `(more)/more.tsx` — three role-based views
+- [x] Migrate `(more)/login.tsx`
+- [x] Migrate `(more)/change-password.tsx`
+- [x] Migrate `(more)/vendor-list.tsx`
 
 ### Auth & Storage
-- [ ] Update `lib/api.tsx` — replace SecureStore reads/writes with `localStorage` (drop the now-unneeded `await`s)
-- [ ] Keep the Bearer attach + 401 refresh-and-retry logic unchanged
-- [ ] Migrate AuthProvider — replace SecureStore with `localStorage`, keep the `/me` validation on mount
-- [ ] Migrate BookmarksProvider — replace SecureStore with `localStorage`, keep the legacy-object migration shim
-- [ ] Migrate vendor clock-in location persistence — replace SecureStore with `localStorage`
+- [x] Update `lib/api.tsx` — replace SecureStore reads/writes with `localStorage` (drop the now-unneeded `await`s)
+- [x] Keep the Bearer attach + 401 refresh-and-retry logic unchanged
+- [x] Migrate AuthProvider — replace SecureStore with `localStorage`, keep the `/me` validation on mount
+- [x] Migrate BookmarksProvider — replace SecureStore with `localStorage`, keep the legacy-object migration shim
+- [x] Migrate vendor clock-in location persistence — replace SecureStore with `localStorage`
 
 ### Maps
-- [ ] Install `react-leaflet` and `leaflet`
-- [ ] Add Leaflet CSS to the app entry
-- [ ] Rebuild `MapView` + `Marker` usage with `react-leaflet` equivalents
-- [ ] Rebuild draggable bottom panel (vendor resource list) as a CSS drawer
-- [ ] Rebuild the draggable vendor marker in the more/vendor page using Leaflet's draggable marker API
-- [ ] Keep coordinate normalization logic (legacy vs. `coordinates` object format)
-- [ ] Migrate filter UI: animated filter buttons → CSS transitions, distance slider → `<input type="range">`
-- [ ] Replace `PanResponder` expand/collapse with CSS transitions + pointer events
+- [x] Install `react-leaflet` and `leaflet`
+- [x] Add Leaflet CSS to the app entry
+- [x] Rebuild `MapView` + `Marker` usage with `react-leaflet` equivalents
+- [x] Rebuild draggable bottom panel (vendor resource list) as a CSS drawer
+- [x] Rebuild the draggable vendor marker in the more/vendor page using Leaflet's draggable marker API
+- [x] Keep coordinate normalization logic (legacy vs. `coordinates` object format)
+- [x] Migrate filter UI: animated filter buttons → CSS transitions, distance slider → `<input type="range">`
+- [x] Replace `PanResponder` expand/collapse with CSS transitions + pointer events
 
 ### Location
-- [ ] Replace `expo-location` with `navigator.geolocation.getCurrentPosition`
-- [ ] Handle permission denied state (browser prompt vs. Expo prompt UX difference)
+- [x] Replace `expo-location` with `navigator.geolocation.getCurrentPosition`
+- [x] Handle permission denied state (browser prompt vs. Expo prompt UX difference)
 - [ ] Test geolocation in both desktop Chrome and mobile Safari
 
 ### Components & Primitives
-- [ ] Replace all `View` → `div` / semantic HTML (`section`, `nav`, `main`, etc.)
-- [ ] Replace all `Text` → `p`, `h1`–`h6`, `span` as appropriate
-- [ ] Replace `FlatList` / `ScrollView` → `div` with CSS overflow + `map()`
-- [ ] Replace `TouchableOpacity` / `Pressable` → `button` or `a`
-- [ ] Replace `expo-image` `<Image>` → `<img loading="lazy">`
-- [ ] Replace `<input>` wrappers → native HTML `<input>` styled with Tailwind
-- [ ] Replace `KeyboardAvoidingView` → remove entirely
-- [ ] Replace `SafeAreaView` → CSS `padding: env(safe-area-inset-top) ...` in root layout
-- [ ] Remove all `Platform.OS` checks
+- [x] Replace all `View` → `div` / semantic HTML (`section`, `nav`, `main`, etc.)
+- [x] Replace all `Text` → `p`, `h1`–`h6`, `span` as appropriate
+- [x] Replace `FlatList` / `ScrollView` → `div` with CSS overflow + `map()`
+- [x] Replace `TouchableOpacity` / `Pressable` → `button` or `a`
+- [x] Replace `expo-image` `<Image>` → `<img loading="lazy">`
+- [x] Replace `<input>` wrappers → native HTML `<input>` styled with Tailwind
+- [x] Replace `KeyboardAvoidingView` → remove entirely
+- [x] Replace `SafeAreaView` → CSS `padding: env(safe-area-inset-top) ...` in root layout
+- [x] Remove all `Platform.OS` checks
 
 ### Animations
-- [ ] Replace button spring scale animations → CSS `active:scale-95` or Framer Motion
-- [ ] Replace filter button color interpolation → CSS transition on `background-color`
-- [ ] Replace map panel expand/collapse animation → CSS `transition: height`
-- [ ] Replace announcements post button animation → CSS or Framer Motion
+- [x] Replace button spring scale animations → CSS `active:scale-95` or Framer Motion
+- [x] Replace filter button color interpolation → CSS transition on `background-color`
+- [x] Replace map panel expand/collapse animation → CSS `transition: height`
+- [x] Replace announcements post button animation → CSS or Framer Motion
 
 ### Utilities & Logic
-- [ ] Move `lib/utils.tsx` as-is
-- [ ] Move resource category constants
-- [ ] Move all TypeScript types
+- [x] Move `lib/utils.tsx` as-is
+- [x] Move resource category constants
+- [x] Move all TypeScript types
 
 ### Testing & Validation
 - [ ] Verify all three role-based home views (admin, vendor, unauthenticated)
