@@ -53,10 +53,10 @@ const DefaultMorePage = () => {
                 <h2 className="font-lexend-semibold mb-[10px] mt-[18px] text-[18px]">Request Printed Guide</h2>
                 <div className="flex flex-row items-center">
                     <div className="flex-1">
-                        <Button>
+                        <Button onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLScVdITiNsBMmL-Fc8TtAnDFRMP6Rf7gKkqEifPAZ7nxMvTVLQ/viewform", "_blank", "noopener")}>
                             <div className={`flex h-[135px] flex-row items-center justify-center gap-[27px] rounded-[5px] bg-white ${cardShadow}`}>
                                 <img src={bookImg} alt="" className="mb-[18px] h-[75px] w-[75px] translate-y-[8px] object-contain" />
-                                <p className="font-lexend-medium w-full max-w-[196px] text-[14px] opacity-60">We are working on a version for 2026. Request to be notified when those are ready to pick up.</p>
+                                <p className="font-lexend-medium w-full max-w-[196px] text-[13px] opacity-60">Request to pick up a 2026 WTTIN resource guide.</p>
                             </div>
                         </Button>
                     </div>
