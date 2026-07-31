@@ -146,8 +146,9 @@ export default function MapPage() {
         }
     }
 
+    // Grows back into the layout's tab-bar clearance so the map runs under the floating bar.
     return (
-        <div className="flex h-full flex-col bg-[#F8F8F8]">
+        <div className="flex h-[calc(100%_+_var(--tab-bar-clearance))] -mb-[var(--tab-bar-clearance)] flex-col bg-[#F8F8F8] md:mb-0 md:h-full">
             <div className="relative z-20 w-full pb-[10px]">
                 <div className="flex h-[45px] flex-row items-center">
                     <img src={logo} alt="" className="ml-[11px] mr-[10px] h-[42px] w-[42px] object-contain" />

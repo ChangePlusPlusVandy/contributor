@@ -78,7 +78,7 @@ const ResourceSections = () => (
 
 const UserHome = () => {
     return (
-        <div className="bg-[#F8F8F8] pb-[20px]">
+        <div className="bg-[#F8F8F8]">
             <Header />
             <div className="mb-1.5 mt-1.5 flex h-[100px] w-full flex-row items-center justify-start">
                 <div className="ml-[10px]">
@@ -104,7 +104,7 @@ const AdminHome = () => {
     }, []);
 
     return (
-        <div className="bg-[#F8F8F8] pb-[20px]">
+        <div className="bg-[#F8F8F8]">
             <Header />
             <div className="flex flex-row flex-wrap gap-3 truncate p-[10px]">
                 <span className="font-lexend-bold text-[29px]">Welcome Back,</span>
@@ -123,7 +123,7 @@ const AdminHome = () => {
 
 const VendorHome = () => {
     return (
-        <div className="bg-[#F8F8F8] pb-[20px]">
+        <div className="bg-[#F8F8F8]">
             <Header />
             <div className="mb-3 mt-1.5 flex h-[100px] w-full flex-row items-center justify-start">
                 <div className="ml-[10px]">

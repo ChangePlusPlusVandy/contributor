@@ -1,11 +1,8 @@
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ResourceModal from "./ResourceModal";
 import type { Coords } from "@/lib/location";
-import markerIconUrl from "leaflet/dist/images/marker-icon.png";
-import markerIcon2xUrl from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadowUrl from "leaflet/dist/images/marker-shadow.png";
 
 export function resourceCoords(r: Resource): { latitude: number; longitude: number } | null {
     if (r.coordinates?.latitude != null && r.coordinates?.longitude != null) {
@@ -18,25 +15,37 @@ export function resourceCoords(r: Resource): { latitude: number; longitude: numb
     return null;
 }
 
-// Vite bundles Leaflet's marker images to hashed URLs, so the default
-// CSS-relative icon paths break — build the icon from explicit imports.
-export const resourceIcon = new L.Icon({
-    iconUrl: markerIconUrl,
-    iconRetinaUrl: markerIcon2xUrl,
-    shadowUrl: markerShadowUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
+function pinIcon(color: string, highlight: string) {
+    const gradientId = `pin-${color.slice(1)}`;
+    return L.divIcon({
+        className: "",
+        html: `<span class="map-pin"><svg width="34" height="46" viewBox="-2 -2 34 46" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${gradientId}" x1="100%" y1="0%" x2="10%" y2="100%"><stop offset="0" stop-color="${highlight}"/><stop offset="1" stop-color="${color}"/></linearGradient></defs><path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="url(#${gradientId})" stroke="#ffffff" stroke-width="2.5"/><circle cx="15" cy="15" r="6" fill="#ffffff"/></svg></span>`,
+        iconSize: [34, 46],
+        iconAnchor: [17, 44],
+        popupAnchor: [0, -42],
+    });
+}
 
-const vendorIcon = L.divIcon({
-    className: "",
-    html: `<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="#2B84E9"/><circle cx="15" cy="15" r="6" fill="#ffffff"/></svg>`,
-    iconSize: [30, 42],
-    iconAnchor: [15, 42],
-    popupAnchor: [0, -40],
-});
+export const resourceIcon = pinIcon("#DF453A", "#E96054");
+const vendorIcon = pinIcon("#2B84E9", "#4F9BF0");
+
+// Toggle a class rather than swap the icon: swapping replaces the marker's DOM,
+// which restarts the element and skips the scale transition.
+function ResourceMarker({ position, selected, onSelect }: { position: [number, number], selected: boolean, onSelect: () => void }) {
+    const markerRef = useRef<L.Marker | null>(null);
+    useEffect(() => {
+        markerRef.current?.getElement()?.classList.toggle("map-pin-selected", selected);
+    }, [selected]);
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={resourceIcon}
+            zIndexOffset={selected ? 1000 : 0}
+            eventHandlers={{ click: onSelect }}
+        />
+    );
+}
 
 function FlyTo({ target }: { target: Coords | null }) {
     const map = useMap();
@@ -64,16 +73,17 @@ export default function MapComponent({ mapData, activeVendors, location, animate
 
     const [modalResource, setModalResource] = useState<Resource | null>(null);
 
+    // isolate keeps Leaflet's own z-indexes (panes/controls go up to 1000) from painting over the nav bar.
     return (
-        <div className="relative h-full w-full">
+        <div className="relative isolate h-full w-full">
             <MapContainer
                 center={[36.145, -86.78316]}
                 zoom={11}
                 className="h-full w-full"
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 />
                 <CenterOnLocation location={location} />
                 <FlyTo target={animateTo} />
@@ -90,11 +100,11 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                         const latitude = c?.latitude ?? 36.125;
                         const longitude = c?.longitude ?? -86.78316;
 
-                        return <Marker
+                        return <ResourceMarker
                             key={key}
                             position={[latitude, longitude]}
-                            icon={resourceIcon}
-                            eventHandlers={{ click: () => setModalResource(resource) }}
+                            selected={modalResource === resource}
+                            onSelect={() => setModalResource(resource)}
                         />
 
                     })

@@ -33,7 +33,7 @@ declare global {
         subcategory: string;
       };
 
-    /** Home-screen category tile (was the second `Resource` type in the Expo app). */
+    /** Home-screen category tile. */
     type CategoryTile = {
         imageURL: string,
         name: string

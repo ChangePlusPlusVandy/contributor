@@ -30,7 +30,7 @@ export default function ResourceModal({ modalResource, closeModalResource, locat
 
     return (
         <div
-            className={`${absolute ? "absolute bottom-[20px] left-[10px] right-[10px] z-[1000]" : "w-full"} animate-fade-in rounded-[20px] bg-white px-3 py-2 text-left shadow-[2px_2px_4px_rgba(0,0,0,0.1)]`}
+            className={`${absolute ? "absolute bottom-[var(--tab-bar-clearance)] left-[10px] right-[10px] z-[1000] md:bottom-[20px]" : "w-full"} animate-fade-in rounded-[20px] bg-white px-3 py-2 text-left shadow-[2px_2px_4px_rgba(0,0,0,0.1)]`}
         >
             <div className="flex flex-row items-center">
                 <img src={logo} alt="" className="h-[24px] w-[24px] object-contain" />
