@@ -3,7 +3,7 @@ import debounce from "lodash.debounce";
 import MapComponent, { resourceCoords } from "@/components/MapComponent";
 import ResourceModal from "@/components/ResourceModal";
 import { useApi } from "@/lib/api";
-import { clamp } from "@/lib/utils";
+import { clamp, getDistanceFromLatLon } from "@/lib/utils";
 import { getCurrentPosition, type Coords } from "@/lib/location";
 import logo from "@/assets/images/logo-svg.svg";
 import searchIcon from "@/assets/images/search.svg";
@@ -111,7 +111,7 @@ export default function MapPage() {
     const [vendorsOnly, setVendorsOnly] = useState<boolean>(false);
 
     const onSearchChange = useCallback(debounce((val: string) => setSearch(val), 400), []);
-    const onSliderChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
+    const onDistanceChange = useCallback(debounce((val: number) => setDistance(val), 400), []);
 
     const { makeRequest } = useApi();
 
@@ -141,14 +141,23 @@ export default function MapPage() {
                 subcategoryMatch = name.toLowerCase().includes(subcategoryFilter.toLowerCase());
             }
 
+            // Resources stay visible when there is nothing to measure against: no user
+            // location (permission denied) or no coordinates on the resource.
+            let distanceMatch = true;
+            const coords = resourceCoords(resource);
+            if (location && coords) {
+                distanceMatch = getDistanceFromLatLon(coords.latitude, coords.longitude, location.latitude, location.longitude) <= distance;
+            }
+
             return categoryMatch &&
                 subcategoryMatch &&
+                distanceMatch &&
                 (idRequired ? !resource.id_required : true) &&
                 (search !== ""
                     ? name.toLowerCase().includes(search.toLowerCase())
                     : true);
         });
-    }, [selectedCategory, subcategoryFilter, idRequired, mapData, search]);
+    }, [selectedCategory, subcategoryFilter, idRequired, mapData, search, distance, location]);
 
     const toggleFilter = (category: Categories) => {
         if (selectedCategory === category) {
@@ -213,8 +222,12 @@ export default function MapPage() {
                                 min={1}
                                 max={100}
                                 step={1}
-                                defaultValue={distance}
-                                onChange={(e) => onSliderChange(Number(e.target.value))}
+                                value={clamp(Number(distanceText) || 1, 1, 100)}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setDistanceText(String(val));
+                                    onDistanceChange(val);
+                                }}
                                 className="h-[35px] w-full accent-[#2B84E9]"
                             />
                             <div className="flex flex-row items-center justify-between">
@@ -232,8 +245,8 @@ export default function MapPage() {
                                         const text = e.target.value;
                                         setDistanceText(text);
                                         const num = Number(text);
-                                        if (!isNaN(num)) {
-                                            setDistance(clamp(Math.round(num), 1, 100));
+                                        if (text !== "" && !isNaN(num)) {
+                                            onDistanceChange(clamp(Math.round(num), 1, 100));
                                         }
                                     }}
                                     className="w-full bg-transparent outline-none"
