@@ -314,27 +314,15 @@ const AdminMorePage = () => {
     ];
 
     return (
-        <div className="flex min-h-full flex-col bg-[#F8F8F8]">
+        <div className="bg-[#F8F8F8]">
             <Header />
-            <div className="flex flex-1 flex-col justify-between px-[24px] pb-[40px] pt-[16px]">
-                <div className="flex flex-col justify-around">
-                    <Button onClick={() => navigate("/more/vendor-list")}>
-                        <div className={`mb-[15px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
-                            <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">View Vendors</p>
-                        </div>
-                    </Button>
-                    <Button onClick={() => navigate("/more/change-password?role=admin")}>
-                        <div className={`mb-[15px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
-                            <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">Change Password</p>
-                        </div>
-                    </Button>
-                    <Button onClick={logout}>
-                        <div className={`mb-[15px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
-                            <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">Logout</p>
-                        </div>
-                    </Button>
-                </div>
-                <div>
+            <div className="px-[24px] pb-[40px] pt-[16px]">
+                <Button onClick={() => navigate("/more/vendor-list")}>
+                    <div className={`mb-[15px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
+                        <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">View Vendors</p>
+                    </div>
+                </Button>
+                <div className="mb-[15px]">
                     <h2 className="font-lexend-semibold mb-[10px] text-[18px]">Pending Resources</h2>
                     {loading && <Loader2 className="animate-spin" />}
                     {!loading && pendingResources.length === 0 && (
@@ -367,6 +355,16 @@ const AdminMorePage = () => {
                         </>
                     }
                 </div>
+                <Button onClick={() => navigate("/more/change-password?role=admin")}>
+                    <div className={`mb-[15px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
+                        <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">Change Password</p>
+                    </div>
+                </Button>
+                <Button onClick={logout}>
+                    <div className={`flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
+                        <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">Logout</p>
+                    </div>
+                </Button>
             </div>
         </div>
     );
