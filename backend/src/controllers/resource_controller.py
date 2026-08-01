@@ -347,7 +347,7 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
                 ]
 
                 coords = getCoordinatesObj(address_parts=address_parts)
-                updates["coordinates"] = coords.model_dump()
+                updates["coordinates"] = coords.model_dump() if coords else None
             
             # If updated_name is not None, then set "name" as updated_name
             if pending.get("updated_name"):

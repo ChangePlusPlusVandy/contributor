@@ -39,8 +39,12 @@ def fetch_all_tabs() -> list[dict]:
     return all_resources
 
 def _geocode_address(address: str):
-    geocoder = OpenCageGeocode()
-    results = geocoder.geocode(address)
+    try:
+        geocoder = OpenCageGeocode()
+        results = geocoder.geocode(address)
+    except Exception as e:
+        logger.warning(f"Geocoding failed for '{address}': {e}")
+        return None
 
     if results and len(results):
         lat = results[0]["geometry"]["lat"]
