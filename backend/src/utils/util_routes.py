@@ -65,12 +65,20 @@ async def seed_from_sheets():
         inserted_count = sum(1 for r in result["results"] if r["status"] == "inserted")
         logger.info(f"Seed complete: {inserted_count} inserted, {updated_count} updated.")
 
+        unknown = result["unknown_subcategories"]
+        if unknown:
+            logger.warning(
+                f"Sheet tabs not in the category taxonomy (resources seeded with "
+                f"category=None and hidden from category filters): {unknown}"
+            )
+
         return {
             "status": "success",
             "synced_at": datetime.utcnow().isoformat(),
             "total": len(resources),
             "inserted": inserted_count,
             "updated": updated_count,
+            "unknown_subcategories": unknown,
             "results": result["results"],
         }
 

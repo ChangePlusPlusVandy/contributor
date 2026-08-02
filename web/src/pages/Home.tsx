@@ -4,15 +4,7 @@ import { Header } from "@/components/Header";
 import { useAuth } from "@/providers/auth";
 import { useAuthApi } from "@/lib/api";
 import { URGENT_NEEDS_RESOURCES, HEALTH_WELLNESS_RESOURCES, FAMILY_PETS_RESOURCES, SPECIALIZED_RESOURCES, GET_HELP_RESOURCES, FIND_WORK_RESOURCES } from "@/constants/resources";
-
-const SECTION_TO_CATEGORY: Record<string, string> = {
-    "Urgent Needs": "Urgent Needs",
-    "Health & Wellness": "Health and Wellness",
-    "Family & Pets": "Family and Pets",
-    "Specialized Assistance": "Specialized Assistance and Help",
-    "Get Help": "Specialized Assistance and Help",
-    "Find Work": "Find Work",
-};
+import type { Category } from "@/constants/categories";
 
 const ResourceTile = ({ resource, onClick }: { resource: CategoryTile; onClick?: () => void }) => {
     return (
@@ -27,13 +19,12 @@ const ResourceTile = ({ resource, onClick }: { resource: CategoryTile; onClick?:
     );
 }
 
-const ResourceSection = ({ title, resources }: { title: string, resources: CategoryTile[] | undefined }) => {
+const ResourceSection = ({ title, category, resources }: { title: string, category: Category, resources: CategoryTile[] | undefined }) => {
 
     const navigate = useNavigate();
-    const categoryFilter = SECTION_TO_CATEGORY[title] ?? title;
 
-    const navigateToCategory = (_title: string) => {
-        navigate(`/category?${createSearchParams({ title: _title, filter: categoryFilter })}`);
+    const navigateToCategory = (subcategory: string) => {
+        navigate(`/category?${createSearchParams({ category, subcategory })}`);
     };
 
     return (
@@ -67,12 +58,12 @@ const BookmarksLink = () => {
 const ResourceSections = () => (
     <>
         <BookmarksLink />
-        <ResourceSection title="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
-        <ResourceSection title="Health & Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
-        <ResourceSection title="Family & Pets" resources={FAMILY_PETS_RESOURCES} />
-        <ResourceSection title="Specialized Assistance" resources={SPECIALIZED_RESOURCES} />
-        <ResourceSection title="Get Help" resources={GET_HELP_RESOURCES} />
-        <ResourceSection title="Find Work & Get Connected" resources={FIND_WORK_RESOURCES} />
+        <ResourceSection title="Urgent Needs" category="Urgent Needs" resources={URGENT_NEEDS_RESOURCES} />
+        <ResourceSection title="Health & Wellness" category="Health and Wellness" resources={HEALTH_WELLNESS_RESOURCES} />
+        <ResourceSection title="Family & Pets" category="Family and Pets" resources={FAMILY_PETS_RESOURCES} />
+        <ResourceSection title="Specialized Assistance" category="Specialized Assistance" resources={SPECIALIZED_RESOURCES} />
+        <ResourceSection title="Get Help" category="Get Help" resources={GET_HELP_RESOURCES} />
+        <ResourceSection title="Find Work & Get Connected" category="Find Work and Get Connected" resources={FIND_WORK_RESOURCES} />
     </>
 );
 

@@ -31,7 +31,7 @@ class SubCategoryChoices(str, Enum):
     MENTAL = "Mental Health"
     ADDICTION = "Addiction Services"
     NURSING = "Nursing Homes + Hospice"
-    DENTAL_HEARING = "Dental and Hearing"
+    DENTAL_HEARING = "Dental + Hearing"
     HIV_MORE = "HIV, PReP, & HEP C"
 
     # Family and Pets
@@ -52,15 +52,77 @@ class SubCategoryChoices(str, Enum):
     DOMESTIC = "Domestic Violence"
     SEXUAL_ASSAULT = "Sexual Assault"
     ADVOCACY = "Advocacy"
-    SOCIAL_SERVICES = "ID's, Birth Certificates & Social Services"
+    SOCIAL_SERVICES = "Social Services"
     OUTSIDE_DAVIDSON = "Outside of Davidson County"
+    PHONES = "Phones"
 
     # Find Work and Get Connected
-    PHONES = "Phones"
     JOBS = "Jobs + Job Training"
     ADULT_EDU = "Adult Education"
     ARTS = "Arts"
     TRANSPORTATION = "Transportation"
+
+CATEGORY_SUBCATEGORIES: dict[CategoryChoices, list[SubCategoryChoices]] = {
+    CategoryChoices.URGENT: [
+        SubCategoryChoices.FOOD,
+        SubCategoryChoices.EMERGENCY_SHELTER,
+        SubCategoryChoices.HOUSING,
+        SubCategoryChoices.PERSONAL_CARE,
+        SubCategoryChoices.RENT,
+    ],
+    CategoryChoices.HEALTH: [
+        SubCategoryChoices.MEDICAL,
+        SubCategoryChoices.MENTAL,
+        SubCategoryChoices.ADDICTION,
+        SubCategoryChoices.NURSING,
+        SubCategoryChoices.DENTAL_HEARING,
+        SubCategoryChoices.HIV_MORE,
+    ],
+    CategoryChoices.FAMILY_PETS: [
+        SubCategoryChoices.TUTORING,
+        SubCategoryChoices.CHILDCARE,
+        SubCategoryChoices.FAMILY_SUPPORT,
+        SubCategoryChoices.PET_HELP,
+    ],
+    CategoryChoices.SPECIAL_ASSISTANCE: [
+        SubCategoryChoices.SENIORS_DISABILITY,
+        SubCategoryChoices.VETS,
+        SubCategoryChoices.LGBTQ,
+        SubCategoryChoices.IMMIGRANTS_REFUGEES,
+        SubCategoryChoices.INCARCERATED,
+    ],
+    CategoryChoices.HELP: [
+        SubCategoryChoices.LEGAL,
+        SubCategoryChoices.DOMESTIC,
+        SubCategoryChoices.SEXUAL_ASSAULT,
+        SubCategoryChoices.ADVOCACY,
+        SubCategoryChoices.SOCIAL_SERVICES,
+        SubCategoryChoices.OUTSIDE_DAVIDSON,
+        SubCategoryChoices.PHONES,
+    ],
+    CategoryChoices.WORK: [
+        SubCategoryChoices.JOBS,
+        SubCategoryChoices.ADULT_EDU,
+        SubCategoryChoices.ARTS,
+        SubCategoryChoices.TRANSPORTATION,
+    ],
+}
+
+# Every subcategory must belong to exactly one category, or resources in the
+# orphaned ones get category=None and disappear from every category filter.
+_mapped = [sub for subs in CATEGORY_SUBCATEGORIES.values() for sub in subs]
+assert len(_mapped) == len(set(_mapped)), "subcategory listed under multiple categories"
+assert set(_mapped) == set(SubCategoryChoices), (
+    f"CATEGORY_SUBCATEGORIES out of sync with SubCategoryChoices: "
+    f"{sorted(s.value for s in set(SubCategoryChoices) ^ set(_mapped))}"
+)
+
+SUBCATEGORY_TO_CATEGORY: dict[str, str] = {
+    sub.value: cat.value
+    for cat, subs in CATEGORY_SUBCATEGORIES.items()
+    for sub in subs
+}
+
 
 class GroupChoices(str, Enum):
     # Food

@@ -68,7 +68,7 @@ export const HEALTH_WELLNESS_RESOURCES: CategoryTile[] = [
     },
     {
         imageURL: health9,
-        name: "Nursing Homes & Hospice"
+        name: "Nursing Homes + Hospice"
     },
     {
         imageURL: health10,
@@ -76,14 +76,14 @@ export const HEALTH_WELLNESS_RESOURCES: CategoryTile[] = [
     },
     {
         imageURL: health11,
-        name: "HIV PrEP, & HEP C"
+        name: "HIV, PReP, & HEP C"
     },
 ];
 
 export const FAMILY_PETS_RESOURCES: CategoryTile[] = [
     {
         imageURL: family12,
-        name: "Tutoring & Mentoring"
+        name: "Tutoring + Mentoring"
     },
     {
         imageURL: family13,
@@ -104,7 +104,7 @@ export const SPECIALIZED_RESOURCES: CategoryTile[] = [
 
     {
         imageURL: specialized16,
-        name: "Tutoring & Mentoring"
+        name: "Seniors + People with Disabilities"
     },
     {
         imageURL: specialized17,
@@ -145,11 +145,11 @@ export const GET_HELP_RESOURCES: CategoryTile[] = [
     },
     {
         imageURL: getHelp25,
-        name: "Identification"
+        name: "Social Services"
     },
     {
         imageURL: getHelp26,
-        name: "Outside Davidson Country"
+        name: "Outside of Davidson County"
     },
     {
         imageURL: getHelp27,
@@ -162,7 +162,7 @@ export const FIND_WORK_RESOURCES: CategoryTile[] = [
 
     {
         imageURL: findWork28,
-        name: "Jobs + Training"
+        name: "Jobs + Job Training"
     },
 
     {

@@ -8,8 +8,8 @@ import { getCurrentPosition, type Coords } from "@/lib/location";
 
 export default function Category() {
     const [searchParams] = useSearchParams();
-    const title = searchParams.get("title") ?? "";
-    const filter = searchParams.get("filter") ?? "";
+    const category = searchParams.get("category") ?? "";
+    const subcategory = searchParams.get("subcategory") ?? "";
     const navigate = useNavigate();
     const [location, setLocation] = useState<Coords | null>(null);
 
@@ -21,7 +21,11 @@ export default function Category() {
 
     const [resources, setResources] = useState<Resource[] | undefined>(undefined);
     useEffect(() => {
-        makeRequest("resources/", {
+        const query = new URLSearchParams();
+        if (category) query.set("category", category);
+        if (subcategory) query.set("subcategory", subcategory);
+
+        makeRequest(`resources/?${query}`, {
             method: "GET"
         }).then((result) => {
             if (result.error != null) {
@@ -29,12 +33,13 @@ export default function Category() {
                 return;
             }
             const raw = result.resources;
-            const list = Array.isArray(raw)
-                ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object")
-                : [];
-            setResources(list.filter((r: Resource) => r.subcategory === title));
+            setResources(
+                Array.isArray(raw)
+                    ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object")
+                    : []
+            );
         });
-    }, [filter]);
+    }, [category, subcategory]);
 
     return (
         <div className="flex min-h-full flex-col bg-[#F8F8F8]">
@@ -44,7 +49,7 @@ export default function Category() {
                 <button type="button" onClick={() => navigate(-1)} className="p-[2px]" aria-label="Back">
                     <ChevronLeft size={24} color="#000" />
                 </button>
-                <h1 className="font-lexend-semibold ml-[4px] text-[18px]">{title}</h1>
+                <h1 className="font-lexend-semibold ml-[4px] text-[18px]">{subcategory}</h1>
             </div>
             {resources === undefined ? (
                 <div className="flex flex-1 items-center justify-center">

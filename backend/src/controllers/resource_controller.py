@@ -25,13 +25,15 @@ from src.utils.utils import (
 from src.utils.email_notifications import send_submission_status_email
 
 
-async def get_resources(collection, active: bool, check_removed: bool):
+async def get_resources(collection, active: bool, check_removed: bool, category: str | None = None, subcategory: str | None = None):
     """
     Retrieve all resources from the database where "removed" is false.
 
     Args:
         collection: MongoDB collection instance ("resources")
         active: True if only "active" resources are to be fetched, False if all resources are to be fetched
+        category: if given, only resources in this category
+        subcategory: if given, only resources in this subcategory
 
     Returns:
         dict: Contains:
@@ -41,13 +43,18 @@ async def get_resources(collection, active: bool, check_removed: bool):
     """
     try:
         resources = []
-        
+
         # find active/all resources depending on "active" boolean parameter
-        if check_removed: 
+        if check_removed:
             query = {"removed": False} if active else {}
         else:
             query = {}
-            
+
+        if category:
+            query["category"] = category
+        if subcategory:
+            query["subcategory"] = subcategory
+
         cursor = collection.find(query)
         
         # add all valid queries into list
@@ -183,12 +190,19 @@ async def seed_db(resources: List[dict], collection):
     """
 
     try:
-        # output list 
+        # output list
         results = []
+
+        # Sheet tab names become 'subcategory' verbatim, so a renamed or new tab
+        # silently produces category=None. Collect them for the caller.
+        unknown_subcategories = set()
 
         # given: resources
         for resource in resources:
             resource = normalize_sheet_resource(resource)
+
+            if resource.get("category") is None:
+                unknown_subcategories.add(resource.get("subcategory"))
 
             if resource.get("address"):
                 address_parts = [
@@ -214,7 +228,11 @@ async def seed_db(resources: List[dict], collection):
             else:
                 results.append({"org_name": resource["org_name"], "status": "inserted"})
 
-        return {"success": True, "results": results}
+        return {
+            "success": True,
+            "results": results,
+            "unknown_subcategories": sorted(s for s in unknown_subcategories if s)
+        }
     except Exception as e:
         print(f"Error in seed_db_from_sheets controller: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")

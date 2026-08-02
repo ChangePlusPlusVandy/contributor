@@ -5,25 +5,13 @@ import ResourceModal from "@/components/ResourceModal";
 import { useApi } from "@/lib/api";
 import { clamp, getDistanceFromLatLon } from "@/lib/utils";
 import { getCurrentPosition, type Coords } from "@/lib/location";
+import { CATEGORIES, CATEGORY_SUBCATEGORIES, type Category } from "@/constants/categories";
 import logo from "@/assets/images/logo-svg.svg";
 import searchIcon from "@/assets/images/search.svg";
 import pinFillIcon from "@/assets/images/pin-fill.svg";
 import filterIcon from "@/assets/images/filter.svg";
 
-const CATEGORY_SUBCATEGORIES: Record<Categories, string[]> = {
-    "Urgent Needs": ["Food", "Emergency Shelter", "Housing", "Personal Care", "Rent + Utilities Assistance"],
-    "Health and Wellness": ["Medical Care", "Mental Health", "Addiction Services", "Nursing Homes + Hospice", "Dental and Hearing", "HIV, PReP, & HEP C"],
-    "Family and Pets": ["Tutoring + Mentoring", "Childcare", "Family Support", "Pet Help"],
-    "Specialized Assistance": [
-        "Seniors + People with Disabilities", "Veterans", "LGBTQ+", "Immigrants + Refugees", "Formerly Incarcerated"
-    ],
-    "Get Help": [
-        "Legal Aid", "Domestic Violence", "Sexual Assault", "Advocacy", "ID's, Birth Certificates & Social Services", "Outside of Davidson County"
-    ],
-    "Find Work": ["Phones", "Jobs + Job Training", "Adult Education", "Arts", "Transporation"]
-};
-
-const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width?: number, height: number, isPressed: boolean, toggleFilter?: (category: Categories) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
+const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOther, textSize = 12, onPress = () => null }: { title: string, width?: number, height: number, isPressed: boolean, toggleFilter?: (category: Category) => void, toggleOther?: () => void, textSize?: number, onPress?: () => void }) => {
 
     const textRef = useRef<HTMLSpanElement>(null);
 
@@ -51,7 +39,7 @@ const FilterButton = ({ title, width, height, isPressed, toggleFilter, toggleOth
     return (
         <button
             type="button"
-            onClick={() => { onPress?.(); toggleFilter?.(title as Categories); toggleOther?.(); }}
+            onClick={() => { onPress?.(); toggleFilter?.(title as Category); toggleOther?.(); }}
             className="flex items-center justify-center rounded-[5px] px-[3px] shadow-[0_0_4px_rgba(0,0,0,0.25)] transition-[background-color,transform] duration-300 active:scale-90"
             style={{ width: width ?? "100%", height, backgroundColor: isPressed ? "#2B84E999" : "#ffffff" }}
         >
@@ -102,7 +90,7 @@ export default function MapPage() {
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [distance, setDistance] = useState<number>(20);
     const [distanceText, setDistanceText] = useState<string>("20");
-    const [selectedCategory, setSelectedCategory] = useState<Categories | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [subcategoryFilter, setSubcategoryFilter] = useState<string | null>(null);
     const [idRequired, setIDRequired] = useState<boolean>(false);
     const [location, setLocation] = useState<Coords | null>(null);
@@ -136,10 +124,7 @@ export default function MapPage() {
             const name = resource.org_name ?? "";
             const categoryMatch = selectedCategory !== null ? resource.category === selectedCategory : true;
 
-            let subcategoryMatch = true;
-            if (subcategoryFilter && resource.category === selectedCategory) {
-                subcategoryMatch = name.toLowerCase().includes(subcategoryFilter.toLowerCase());
-            }
+            const subcategoryMatch = subcategoryFilter !== null ? resource.subcategory === subcategoryFilter : true;
 
             // Resources stay visible when there is nothing to measure against: no user
             // location (permission denied) or no coordinates on the resource.
@@ -159,7 +144,7 @@ export default function MapPage() {
         });
     }, [selectedCategory, subcategoryFilter, idRequired, mapData, search, distance, location]);
 
-    const toggleFilter = (category: Categories) => {
+    const toggleFilter = (category: Category) => {
         if (selectedCategory === category) {
             setSelectedCategory(null);
             setSubcategoryFilter(null);
@@ -263,12 +248,16 @@ export default function MapPage() {
                                 <p className="font-lexend-medium text-[14px]">Category</p>
                             </div>
                             <div className="mt-[8px] grid grid-cols-3 gap-[9px]">
-                                <FilterButton title="Urgent Needs" isPressed={selectedCategory === "Urgent Needs"} toggleFilter={toggleFilter} textSize={10} height={36} />
-                                <FilterButton title="Health and Wellness" isPressed={selectedCategory === "Health and Wellness"} toggleFilter={toggleFilter} textSize={10} height={36} />
-                                <FilterButton title="Family and Pets" isPressed={selectedCategory === "Family and Pets"} toggleFilter={toggleFilter} textSize={10} height={36} />
-                                <FilterButton title="Specialized Assistance" isPressed={selectedCategory === "Specialized Assistance"} toggleFilter={toggleFilter} textSize={10} height={36} />
-                                <FilterButton title="Find Work" isPressed={selectedCategory === "Find Work"} toggleFilter={toggleFilter} textSize={10} height={36} />
-                                <FilterButton title="Get Help" isPressed={selectedCategory === "Get Help"} toggleFilter={toggleFilter} textSize={10} height={36} />
+                                {CATEGORIES.map((category) => (
+                                    <FilterButton
+                                        key={category}
+                                        title={category}
+                                        isPressed={selectedCategory === category}
+                                        toggleFilter={toggleFilter}
+                                        textSize={10}
+                                        height={36}
+                                    />
+                                ))}
                             </div>
                             {selectedCategory !== null && CATEGORY_SUBCATEGORIES[selectedCategory] && (
                                 <div className="mt-[12px]">

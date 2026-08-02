@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv, find_dotenv
 from opencage.geocoder import OpenCageGeocode
 from datetime import datetime, timezone
-from src.schemas.resource import Coordinates
+from src.schemas.resource import Coordinates, SUBCATEGORY_TO_CATEGORY
 from src.config.logger import get_logger
 
 load_dotenv(find_dotenv())
@@ -75,21 +75,6 @@ def prepare_default_fields(address_parts: list) -> dict:
         "coordinates": coords.model_dump() if coords else None
     }
 
-# Maps category -> list of subcategories
-_CATEGORY_MAP = {
-    'Urgent Needs': ['Food', 'Emergency Shelter', 'Housing', 'Personal Care', 'Rent + Utilities Assistance'],
-    'Health and Wellness': ['Medical Care', 'Mental Health', 'Addiction Services', 'Nursing Homes + Hospice'],
-    'Family and Pets': ['Tutoring + Mentoring', 'Childcare', 'Family Support', 'Pet Help'],
-    'Specialized Assistance': ['Seniors + People with Disabilities', 'Veterans', 'LGBTQ+', 'Immigrants + Refugees', 'Formerly Incarcerated'],
-    'Get Help': ['Legal Aid', 'Domestic Violence', 'Sexual Assault', 'Advocacy', "ID's, Birth Certificates & Social Services", 'Outside Davidson County', 'Phones'],
-    'Find Work': ['Jobs + Job Training', 'Adult Education', 'Arts', 'Transportation']
-}
-
-# Inverted: subcategory -> category
-_SUBCATEGORY_TO_CATEGORY = {
-    sub: cat for cat, subs in _CATEGORY_MAP.items() for sub in subs
-}
-
 # Sheet column names -> ResourceBase field names
 _COLUMN_MAP = {
     "Category": "group",
@@ -125,7 +110,7 @@ def normalize_sheet_resource(raw: dict) -> dict:
 
     subcategory = raw.get("subcategory")
     normalized["subcategory"] = subcategory
-    normalized["category"] = _SUBCATEGORY_TO_CATEGORY.get(subcategory)
+    normalized["category"] = SUBCATEGORY_TO_CATEGORY.get(subcategory)
 
     return normalized
 

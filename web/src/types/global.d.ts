@@ -1,14 +1,15 @@
+import type { Category, Subcategory } from "@/constants/categories";
+
 declare global {
 
     type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-    type Categories = "Urgent Needs" | "Health and Wellness" | "Family and Pets" | "Specialized Assistance" | "Find Work" | "Get Help";
 
     type Resource = {
         name: string;
         email: string;
         phone: number;
         org_name: string;
-        category: Categories;
+        category: Category | null;
         page?: number | null;
         bus_line?: string | null;
         hours?: string | null;
@@ -36,7 +37,7 @@ declare global {
     /** Home-screen category tile. */
     type CategoryTile = {
         imageURL: string,
-        name: string
+        name: Subcategory
     }
 
     type ActiveVendor = {

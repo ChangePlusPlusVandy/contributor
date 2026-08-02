@@ -8,7 +8,7 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from src.schemas.resource import Resource
+from src.schemas.resource import Resource, CategoryChoices, SubCategoryChoices
 from src.controllers.resource_controller import (
     get_resources,
     create_resource,
@@ -26,26 +26,39 @@ router = APIRouter(prefix="/resources", tags=["Resources"])
 logger = get_logger(__name__)
 
 @router.get("/")
-async def route_get_resources(active: bool = True):
+async def route_get_resources(
+    active: bool = True,
+    category: CategoryChoices | None = None,
+    subcategory: SubCategoryChoices | None = None
+):
     """
     Retrieve resources from MongoDB.
 
     Args:
         active: True if only "active" resources are to be fetched, False if all resources are to be fetched
+        category: optional category to filter by
+        subcategory: optional subcategory to filter by
 
-    Example: 
+    Example:
         GET /resources?active=false
+        GET /resources?category=Urgent%20Needs&subcategory=Food
 
     Returns:
         JSON object containing:
             - success: whether the request succeeded
             - active: the filter applied
-            - resources: list of resources 
+            - resources: list of resources
     """
-    logger.info("Fetching all active resources...")
+    logger.info(f"Fetching resources (category={category}, subcategory={subcategory})...")
     try:
         collection = get_resources_collection()
-        resources = await get_resources(collection, active=active, check_removed=True)
+        resources = await get_resources(
+            collection,
+            active=active,
+            check_removed=True,
+            category=category.value if category else None,
+            subcategory=subcategory.value if subcategory else None
+        )
         logger.info(f"Successfully retrieved {len(resources.get('resources', []))} {'active ' if active else ''} resources.")
         return resources
     except Exception as e:
