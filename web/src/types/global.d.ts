@@ -32,6 +32,7 @@ declare global {
         } | null;
         created_at: string;
         subcategory: string;
+        group?: string | null;
       };
 
     /** Home-screen category tile. */

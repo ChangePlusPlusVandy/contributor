@@ -20,13 +20,27 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
     return `https://${t}`;
 }
 
+function hasValue(value: string | null | undefined): boolean {
+    return value != null && value.trim() !== "";
+}
+
+function Field({ label, value }: { label: string, value: string | null | undefined }) {
+    if (!hasValue(value)) return null;
+    return (
+        <p className="font-lexend-bold mt-1 text-[10px] first:mt-0">{label}: <span className="font-lexend-medium">{value}</span></p>
+    );
+}
+
 export default function ResourceModal({ modalResource, closeModalResource, location, absolute = true }: { modalResource: Resource, closeModalResource: () => void, location: Coords | null, absolute?: boolean }) {
 
     const { isBookmarked, toggleBookmark } = useBookmarks();
     const bookmarked = isBookmarked(modalResource.org_name);
     const websiteUrl = normalizeWebsiteUrl(modalResource.website);
 
-    const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${modalResource.coordinates?.latitude ?? 0},${modalResource.coordinates?.longitude ?? 0}`;
+    const coordinates = modalResource.coordinates;
+    const directionsUrl = coordinates != null
+        ? `https://www.google.com/maps/dir/?api=1&destination=${coordinates.latitude},${coordinates.longitude}`
+        : null;
 
     return (
         <div
@@ -45,23 +59,33 @@ export default function ResourceModal({ modalResource, closeModalResource, locat
                     </button>
                 }
             </div>
-            <p className="font-lexend-bold mt-2 text-[10px]">Services: <span className="font-lexend-medium">{modalResource.services}</span></p>
-            <p className="font-lexend-bold mt-1 text-[10px]">Hours: <span className="font-lexend-medium">{formatResourceHours(modalResource.hours)}</span></p>
-            <p className="font-lexend-bold mt-1 text-[10px]">Address: <span className="font-lexend-medium">{modalResource.address}</span></p>
+            {hasValue(modalResource.group) && (
+                <p className="font-lexend-medium mt-1 text-[12px]">{modalResource.group}</p>
+            )}
             <div className="mt-2">
-                <a href={directionsUrl} target="_blank" rel="noreferrer" className="font-lexend-medium block text-[11px] text-[#2B84E9]">
-                    Directions
-                </a>
+                <Field label="Services" value={modalResource.services} />
+                <Field label="Requirements" value={modalResource.requirements} />
+                <Field label="Application Process" value={modalResource.app_process} />
+                <Field label="Hours" value={formatResourceHours(modalResource.hours)} />
+                <Field label="Address" value={modalResource.address} />
+                <Field label="Bus Line" value={modalResource.bus_line} />
+            </div>
+            <div className="mt-2">
+                {directionsUrl != null && (
+                    <a href={directionsUrl} target="_blank" rel="noreferrer" className="font-lexend-medium block text-[11px] text-[#2B84E9]">
+                        Directions
+                    </a>
+                )}
                 {websiteUrl != null && (
                     <a href={websiteUrl} target="_blank" rel="noreferrer" className="font-lexend-medium mt-1 block truncate text-[11px] text-[#2B84E9]">
                         Visit Website
                     </a>
                 )}
-            </div>
-            <div className="flex flex-row items-center justify-between">
-                <a href={`tel:${modalResource.phone}`} className="font-lexend-medium mt-[3px] text-[11px] text-[#2B84E9] active:text-[#76b6ffee]">
-                    Call: {modalResource.phone}
-                </a>
+                {hasValue(modalResource.org_phones) && (
+                    <a href={`tel:${modalResource.org_phones}`} className="font-lexend-medium mt-1 block text-[11px] text-[#2B84E9] active:text-[#76b6ffee]">
+                        Call: {modalResource.org_phones}
+                    </a>
+                )}
             </div>
         </div>
     );
