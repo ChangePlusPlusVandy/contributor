@@ -1,4 +1,5 @@
 import os
+import json
 import gspread
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv, find_dotenv
@@ -12,7 +13,7 @@ load_dotenv(find_dotenv())
 logger = get_logger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-JSON_KEY_PATH = os.getenv("JSON_KEY_PATH")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
 
@@ -21,7 +22,12 @@ def fetch_all_tabs() -> list[dict]:
     Opens the Google Sheet, iterates all tabs, and returns a flat list
     of raw resource dicts with 'subcategory' injected from the tab name.
     """
-    creds = Credentials.from_service_account_file(JSON_KEY_PATH, scopes=SCOPES)
+    if not GOOGLE_SERVICE_ACCOUNT_JSON:
+        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON is not set")
+
+    creds = Credentials.from_service_account_info(
+        json.loads(GOOGLE_SERVICE_ACCOUNT_JSON), scopes=SCOPES
+    )
     gc = gspread.authorize(creds)
     spreadsheet = gc.open_by_key(SHEET_ID)
 

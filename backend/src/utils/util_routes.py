@@ -5,7 +5,7 @@ import asyncio
 from src.config.logger import get_logger
 from src.controllers.resource_controller import seed_db
 from src.config.database import get_resources_collection
-from src.utils.utils import fetch_all_tabs, JSON_KEY_PATH, SHEET_ID
+from src.utils.utils import fetch_all_tabs, SHEET_ID
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -31,10 +31,6 @@ async def sync_resources():
             "count": len(resources),
             "resources": resources,
         }
-
-    except FileNotFoundError:
-        logger.error(f"Service account key file not found at: {JSON_KEY_PATH}")
-        raise HTTPException(status_code=500, detail="Service account key file not found.")
 
     except gspread.exceptions.SpreadsheetNotFound:
         logger.error(f"Spreadsheet not found with ID: {SHEET_ID}")
@@ -81,10 +77,6 @@ async def seed_from_sheets():
             "unknown_subcategories": unknown,
             "results": result["results"],
         }
-
-    except FileNotFoundError:
-        logger.error(f"Service account key file not found at: {JSON_KEY_PATH}")
-        raise HTTPException(status_code=500, detail="Service account key file not found.")
 
     except gspread.exceptions.SpreadsheetNotFound:
         logger.error(f"Spreadsheet not found with ID: {SHEET_ID}")
