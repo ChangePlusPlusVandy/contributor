@@ -31,7 +31,7 @@ function Field({ label, value }: { label: string, value: string | null | undefin
     );
 }
 
-export default function ResourceModal({ modalResource, closeModalResource, location, absolute = true }: { modalResource: Resource, closeModalResource: () => void, location: Coords | null, absolute?: boolean }) {
+export default function ResourceModal({ modalResource, closeModalResource, location, absolute = true, showGroup = true }: { modalResource: Resource, closeModalResource: () => void, location: Coords | null, absolute?: boolean, showGroup?: boolean }) {
 
     const { isBookmarked, toggleBookmark } = useBookmarks();
     const bookmarked = isBookmarked(modalResource.org_name);
@@ -59,7 +59,7 @@ export default function ResourceModal({ modalResource, closeModalResource, locat
                     </button>
                 }
             </div>
-            {hasValue(modalResource.group) && (
+            {showGroup && hasValue(modalResource.group) && (
                 <p className="font-lexend-medium mt-1 text-[12px]">{modalResource.group}</p>
             )}
             <div className="mt-2">

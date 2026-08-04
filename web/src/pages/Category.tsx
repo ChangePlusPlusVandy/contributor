@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { Header } from "@/components/Header";
@@ -41,6 +41,29 @@ export default function Category() {
         });
     }, [category, subcategory]);
 
+    // Groups are sorted alphabetically; resources without a group collect in a trailing section.
+    const sections = useMemo(() => {
+        if (!resources) return [];
+
+        const buckets = new Map<string, Resource[]>();
+        const ungrouped: Resource[] = [];
+
+        for (const resource of resources) {
+            const group = resource.group?.trim();
+            if (!group) {
+                ungrouped.push(resource);
+                continue;
+            }
+            const bucket = buckets.get(group);
+            if (bucket) bucket.push(resource);
+            else buckets.set(group, [resource]);
+        }
+
+        const sorted = [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b));
+        if (ungrouped.length > 0) sorted.push(["Other", ungrouped]);
+        return sorted;
+    }, [resources]);
+
     return (
         <div className="flex min-h-full flex-col bg-[#F8F8F8]">
             <Header />
@@ -63,18 +86,24 @@ export default function Category() {
                 </div>
             ) : (
                 <div className="px-[10px] pb-[20px]">
-                    {resources?.map((resource: Resource, index) => (
-                        <div
-                            key={(resource as Resource & { _id?: string })._id ?? `category-resource-${index}`}
-                            className="mb-[12px]"
-                        >
-                            <ResourceModal
-                                absolute={false}
-                                modalResource={resource}
-                                closeModalResource={() => { }}
-                                location={location}
-                            />
-                        </div>
+                    {sections.map(([group, groupResources]) => (
+                        <section key={group} className="mt-[18px] first:mt-0">
+                            <h2 className="font-lexend-semibold mb-[10px] text-[17px]">{group}</h2>
+                            {groupResources.map((resource: Resource, index) => (
+                                <div
+                                    key={(resource as Resource & { _id?: string })._id ?? `category-resource-${index}`}
+                                    className="mb-[12px]"
+                                >
+                                    <ResourceModal
+                                        absolute={false}
+                                        showGroup={false}
+                                        modalResource={resource}
+                                        closeModalResource={() => { }}
+                                        location={location}
+                                    />
+                                </div>
+                            ))}
+                        </section>
                     ))}
                 </div>
             )}
