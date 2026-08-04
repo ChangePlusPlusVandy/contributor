@@ -104,7 +104,7 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                             key={key}
                             position={[latitude, longitude]}
                             selected={modalResource === resource}
-                            onSelect={() => setModalResource(resource)}
+                            onSelect={() => setModalResource(prev => prev === resource ? null : resource)}
                         />
 
                     })
