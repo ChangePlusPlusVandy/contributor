@@ -72,6 +72,11 @@ const DefaultMorePage = () => {
                         </Button>
                     </div>
                 </div>
+                <Button onClick={() => navigate("/more/pwa")}>
+                    <div className={`mt-[18px] flex h-[33px] flex-row items-center justify-center rounded-[10px] bg-white ${cardShadow}`}>
+                        <p className="font-lexend-medium w-full text-center text-[13px] text-[#2B84E9] opacity-60">PWA Installation Instructions</p>
+                    </div>
+                </Button>
             </div>
         </div>
     );
