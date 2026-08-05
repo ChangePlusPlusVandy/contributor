@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import ResourceModal from "./ResourceModal";
 import type { Coords } from "@/lib/location";
 
@@ -22,7 +22,7 @@ function pinIcon(color: string, highlight: string) {
         html: `<span class="map-pin"><svg width="34" height="46" viewBox="-2 -2 34 46" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${gradientId}" x1="100%" y1="0%" x2="10%" y2="100%"><stop offset="0" stop-color="${highlight}"/><stop offset="1" stop-color="${color}"/></linearGradient></defs><path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="url(#${gradientId})" stroke="#ffffff" stroke-width="2.5"/><circle cx="15" cy="15" r="6" fill="#ffffff"/></svg></span>`,
         iconSize: [34, 46],
         iconAnchor: [17, 44],
-        popupAnchor: [0, -42],
+        popupAnchor: [0, -58],
     });
 }
 
@@ -44,6 +44,26 @@ function ResourceMarker({ position, selected, onSelect }: { position: [number, n
             zIndexOffset={selected ? 1000 : 0}
             eventHandlers={{ click: onSelect }}
         />
+    );
+}
+
+// The Leaflet popup already tracks open/closed, so the scale can follow it
+// directly instead of duplicating the state in React.
+function VendorMarker({ position, children }: { position: [number, number], children: ReactNode }) {
+    const markerRef = useRef<L.Marker | null>(null);
+    const setSelected = (selected: boolean) => {
+        markerRef.current?.getElement()?.classList.toggle("map-pin-selected", selected);
+        markerRef.current?.setZIndexOffset(selected ? 1000 : 0);
+    };
+    return (
+        <Marker
+            ref={markerRef}
+            position={position}
+            icon={vendorIcon}
+            eventHandlers={{ popupopen: () => setSelected(true), popupclose: () => setSelected(false) }}
+        >
+            {children}
+        </Marker>
     );
 }
 
@@ -110,10 +130,9 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                     })
                 }
                 {activeVendors.map((vendor) => (
-                    <Marker
+                    <VendorMarker
                         key={vendor.vendor_id}
                         position={[vendor.location.latitude, vendor.location.longitude]}
-                        icon={vendorIcon}
                     >
                         <Popup>
                             <div style={{ padding: 6, minWidth: 100 }}>
@@ -121,7 +140,7 @@ export default function MapComponent({ mapData, activeVendors, location, animate
                                 <p style={{ fontSize: 11, color: "#16a34a" }}>Clocked In - Get your Newspaper Here!</p>
                             </div>
                         </Popup>
-                    </Marker>
+                    </VendorMarker>
                 ))}
             </MapContainer>
             {
