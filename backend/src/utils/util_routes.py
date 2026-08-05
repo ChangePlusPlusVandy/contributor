@@ -38,7 +38,7 @@ async def sync_resources():
 
     except Exception as e:
         logger.error(f"Error fetching Google Sheet: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error fetching sheet: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch Google Sheet")
 
 
 @router.post("/seed_from_sheets")
@@ -84,4 +84,4 @@ async def seed_from_sheets():
 
     except Exception as e:
         logger.error(f"Error in seed_from_sheets: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Seed failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Seed failed")

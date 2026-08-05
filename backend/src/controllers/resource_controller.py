@@ -23,6 +23,9 @@ from src.utils.utils import (
     normalize_sheet_resource
 )
 from src.utils.email_notifications import send_submission_status_email
+from src.config.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 async def get_resources(collection, active: bool, check_removed: bool, category: str | None = None, subcategory: str | None = None):
@@ -69,8 +72,7 @@ async def get_resources(collection, active: bool, check_removed: bool, category:
             "active": active,
             "resources": resources
         }
-    except Exception as e:
-        print(f"Error in get_all_resources controller: {e}")
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -98,8 +100,7 @@ async def create_resource(resource: Resource, collection):
         resource_dict["_id"] = str(result.inserted_id)
 
         return {"success": True, "resource": resource_dict}
-    except Exception as e:
-        print(f"Error in create_resource controller: {e}")
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -135,7 +136,7 @@ async def get_resource(identifier: str, collection, search_by: str = "id"):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in get_resource controller: {e}")
+        logger.error(f"Error in get_resource controller: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -176,7 +177,7 @@ async def update_resource(resource_id: str, updates: dict, collection):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in update_resource controller: {e}")
+        logger.error(f"Error in update_resource controller: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -233,8 +234,7 @@ async def seed_db(resources: List[dict], collection):
             "results": results,
             "unknown_subcategories": sorted(s for s in unknown_subcategories if s)
         }
-    except Exception as e:
-        print(f"Error in seed_db_from_sheets controller: {e}")
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -286,13 +286,13 @@ async def receive_form(request: Request, pending_collection, resource_collection
                     "resource": updated_resource.model_dump()
                 }
             else:
-                print(f"Error: no existing resource with org_name {resource_data.get('org_name')}")
+                logger.warning(f"Cannot update: no existing resource with org_name {resource_data.get('org_name')}")
                 raise HTTPException(status_code=422, detail=f"Cannot update: No existing resource with org_name='{resource_data.get('org_name')}'")
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in receive_form controller: {e}")
+        logger.error(f"Error in receive_form controller: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
@@ -395,7 +395,7 @@ async def approve_submission(submission_id: str, pending_collection, resource_co
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in approve_submission controller: {e}")
+        logger.error(f"Error in approve_submission controller: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
 
 
@@ -445,7 +445,7 @@ async def deny_submission(submission_id: str, pending_collection):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in deny_submission controller: {e}")
+        logger.error(f"Error in deny_submission controller: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
     
 
