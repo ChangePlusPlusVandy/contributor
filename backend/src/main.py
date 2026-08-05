@@ -8,6 +8,7 @@ if backend_dir not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from src.config.database import MongoDB
 from src.config.logger import get_logger
@@ -34,6 +35,8 @@ async def lifespan(app: FastAPI):
     await MongoDB.close_db()
 
 app = FastAPI(lifespan = lifespan)
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 cors_origins = os.environ["CORS_ORIGINS"].split(",")
 logger.info(f"CORS allowed origins: {cors_origins}")
