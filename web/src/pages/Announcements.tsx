@@ -1,21 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/providers/auth";
-import { useApi, useAuthApi } from "@/lib/api";
+import { useAuthApi } from "@/lib/api";
+import { useAnnouncements, type Announcement } from "@/lib/cache";
 
-type AnnouncementItem = {
-    id: string;
-    content: string;
-    createdAt: number;
-};
-
-type AnnouncementApiItem = {
-    id: string;
-    content: string;
-    created_at: string;
-};
-
-const AnnouncementCard = ({ item }: { item: AnnouncementItem }) => {
+const AnnouncementCard = ({ item }: { item: Announcement }) => {
     const dateLabel = useMemo(() => {
         return new Date(item.createdAt).toLocaleDateString(undefined, {
             month: "short",
@@ -35,26 +24,13 @@ const AnnouncementCard = ({ item }: { item: AnnouncementItem }) => {
 export default function Announcements() {
     const { user } = useAuth();
     const isAdmin = user?.role === "admin";
-    const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+    const { announcements, addAnnouncement } = useAnnouncements();
     const [draft, setDraft] = useState("");
     const [posting, setPosting] = useState(false);
-    const { makeRequest: publicRequest } = useApi();
     const { makeRequest: authRequest } = useAuthApi();
 
-    useEffect(() => {
-        publicRequest("announcements/getAll").then(data => {
-            if (data.error) return;
-            const items = (data.announcements as AnnouncementApiItem[]).map(a => ({
-                id: a.id,
-                content: a.content,
-                createdAt: new Date(a.created_at).getTime(),
-            }));
-            setAnnouncements(items);
-        });
-    }, []);
-
     const sorted = useMemo(
-        () => [...announcements].sort((a, b) => b.createdAt - a.createdAt),
+        () => [...(announcements ?? [])].sort((a, b) => b.createdAt - a.createdAt),
         [announcements]
     );
 
@@ -68,7 +44,7 @@ export default function Announcements() {
                 body: JSON.stringify({ content: trimmed }),
             });
             if (data.error) { window.alert(`Error: ${data.error}`); return; }
-            setAnnouncements(prev => [...prev, { id: data.id, content: trimmed, createdAt: new Date(data.created_at).getTime() }]);
+            addAnnouncement({ id: data.id, content: trimmed, createdAt: new Date(data.created_at).getTime() });
             setDraft("");
         } finally {
             setPosting(false);

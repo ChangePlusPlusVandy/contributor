@@ -1,50 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import ResourceModal from "@/components/ResourceModal";
 import { useBookmarks } from "@/providers/bookmarks";
-import { useApi } from "@/lib/api";
+import { useResources } from "@/lib/cache";
 import { getCurrentPosition, type Coords } from "@/lib/location";
 
 export default function Bookmarks() {
     const { bookmarkedOrgNames } = useBookmarks();
-    const { makeRequest } = useApi();
+    const resources = useResources();
     const navigate = useNavigate();
     const [location, setLocation] = useState<Coords | null>(null);
-    const [resolvedResources, setResolvedResources] = useState<Resource[] | undefined>(undefined);
 
     useEffect(() => {
         getCurrentPosition().then(setLocation);
     }, []);
 
-    useEffect(() => {
-        if (bookmarkedOrgNames.length === 0) {
-            setResolvedResources([]);
-            return;
-        }
-        let cancelled = false;
-        setResolvedResources(undefined);
-        makeRequest("resources/", { method: "GET" }).then((result) => {
-            if (cancelled) return;
-            if (result.error != null) {
-                setResolvedResources([]);
-                return;
-            }
-            const raw = result.resources;
-            const list = Array.isArray(raw)
-                ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object")
-                : [];
-            const byName = new Map(list.map((r: Resource) => [r.org_name, r]));
-            const ordered = bookmarkedOrgNames
-                .map((name) => byName.get(name))
-                .filter((r): r is Resource => r != null);
-            setResolvedResources(ordered);
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, [bookmarkedOrgNames]);
+    const resolvedResources = useMemo(() => {
+        if (bookmarkedOrgNames.length === 0) return [];
+        if (!resources) return undefined;
+        const byName = new Map(resources.map((r) => [r.org_name, r]));
+        return bookmarkedOrgNames
+            .map((name) => byName.get(name))
+            .filter((r): r is Resource => r != null);
+    }, [resources, bookmarkedOrgNames]);
 
     const isEmpty = bookmarkedOrgNames.length === 0;
     const isLoading = !isEmpty && resolvedResources === undefined;

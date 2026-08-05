@@ -3,6 +3,7 @@ import debounce from "lodash.debounce";
 import MapComponent, { resourceCoords } from "@/components/MapComponent";
 import ResourceModal from "@/components/ResourceModal";
 import { useApi } from "@/lib/api";
+import { useResources } from "@/lib/cache";
 import { clamp, getDistanceFromLatLon } from "@/lib/utils";
 import { getCurrentPosition, type Coords } from "@/lib/location";
 import { CATEGORIES, CATEGORY_SUBCATEGORIES, type Category } from "@/constants/categories";
@@ -84,7 +85,7 @@ const TopPanel = ({ resources, location, setAnimateTo }: { resources: Resource[]
 
 export default function MapPage() {
 
-    const [mapData, setMapData] = useState<Resource[] | undefined>(undefined);
+    const mapData = useResources();
     const [activeVendors, setActiveVendors] = useState<ActiveVendor[]>([]);
 
     const [showFilter, setShowFilter] = useState<boolean>(false);
@@ -104,12 +105,6 @@ export default function MapPage() {
     const { makeRequest } = useApi();
 
     useEffect(() => {
-        makeRequest("resources/", { method: "GET" }).then((result) => {
-            if (result.error != null) { setMapData([]); return; }
-            const raw = result.resources;
-            const list = Array.isArray(raw) ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object") : [];
-            setMapData(list);
-        });
         makeRequest("vendors/active").then((result) => {
             if (!result.error) setActiveVendors(result.vendors ?? []);
         });

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import ResourceModal from "@/components/ResourceModal";
-import { useApi } from "@/lib/api";
+import { useResources } from "@/lib/cache";
 import { getCurrentPosition, type Coords } from "@/lib/location";
 
 export default function Category() {
@@ -17,29 +17,15 @@ export default function Category() {
         getCurrentPosition().then(setLocation);
     }, []);
 
-    const { makeRequest } = useApi();
+    const allResources = useResources();
 
-    const [resources, setResources] = useState<Resource[] | undefined>(undefined);
-    useEffect(() => {
-        const query = new URLSearchParams();
-        if (category) query.set("category", category);
-        if (subcategory) query.set("subcategory", subcategory);
-
-        makeRequest(`resources/?${query}`, {
-            method: "GET"
-        }).then((result) => {
-            if (result.error != null) {
-                setResources([]);
-                return;
-            }
-            const raw = result.resources;
-            setResources(
-                Array.isArray(raw)
-                    ? raw.filter((r: unknown): r is Resource => r != null && typeof r === "object")
-                    : []
-            );
-        });
-    }, [category, subcategory]);
+    const resources = useMemo(() => {
+        if (!allResources) return undefined;
+        return allResources.filter((resource) =>
+            (!category || resource.category === category) &&
+            (!subcategory || resource.subcategory === subcategory)
+        );
+    }, [allResources, category, subcategory]);
 
     // Groups are sorted alphabetically; resources without a group collect in a trailing section.
     const sections = useMemo(() => {
