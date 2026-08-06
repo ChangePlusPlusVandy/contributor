@@ -215,18 +215,37 @@ async def seed_db(resources: List[dict], collection):
             else:
                 address_parts = None
 
-            result = await collection.update_one(
+            existing = await collection.find_one(
                 {"org_name": resource["org_name"]},
-                {
-                    "$set": resource,
-                    "$setOnInsert": prepare_default_fields(address_parts=address_parts)
-                 },
-                upsert = True
+                {"_id": 1, "address": 1, "city": 1, "state": 1, "zip_code": 1}
             )
 
-            if result.matched_count > 0:
+            if existing:
+                updates = dict(resource)
+
+                # coordinates are only stored on insert, so re-geocode when the
+                # sheet's address changes or the pin would be left at the old spot
+                if any(existing.get(f) != resource.get(f)
+                       for f in ("address", "city", "state", "zip_code")):
+                    coords = getCoordinatesObj(address_parts=address_parts)
+                    updates["coordinates"] = coords.model_dump() if coords else None
+
+                await collection.update_one(
+                    {"_id": existing["_id"]},
+                    {"$set": updates}
+                )
                 results.append({"org_name": resource["org_name"], "status": "updated"})
             else:
+                # prepare_default_fields geocodes, so build it only for real inserts:
+                # $setOnInsert would discard the result but Python still pays for the call
+                await collection.update_one(
+                    {"org_name": resource["org_name"]},
+                    {
+                        "$set": resource,
+                        "$setOnInsert": prepare_default_fields(address_parts=address_parts)
+                     },
+                    upsert = True
+                )
                 results.append({"org_name": resource["org_name"], "status": "inserted"})
 
         return {
