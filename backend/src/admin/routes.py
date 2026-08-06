@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from supabase_auth.errors import AuthApiError
-from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, AdminChangePasswordRequest, VendorCreateRequest
+from src.schemas.user import AdminRegisterRequest, AdminLoginRequest, AdminChangePasswordRequest, VendorCreateRequest, VendorChangePasswordRequest
 from src.admin.middleware import get_current_admin
 from src.config.database import get_admin_collection, get_vendor_users_collection, supabase, supabase_admin
 from src.config.logger import get_logger
@@ -170,3 +170,31 @@ async def delete_vendor(vendor_id: str, current_admin: dict = Depends(get_curren
     await vendors.delete_one({"vendor_id": vendor_id})
     logger.info(f"Successfully deleted vendor {vendor_id}")
     return {"message": "Vendor deleted successfully"}
+
+
+@router.post("/vendors/{vendor_id}/reset-password", status_code=status.HTTP_200_OK)
+async def reset_vendor_password(
+    vendor_id: str,
+    data: VendorChangePasswordRequest,
+    current_admin: dict = Depends(get_current_admin)
+):
+    logger.info(f"Admin {current_admin.get('email')} resetting password for vendor {vendor_id}")
+    vendors = get_vendor_users_collection()
+    vendor = await vendors.find_one({"vendor_id": vendor_id})
+    if not vendor:
+        logger.warning(f"Password reset failed: no vendor with vendor_id={vendor_id}")
+        raise HTTPException(status_code=404, detail="Vendor not found")
+
+    supabase_id = vendor.get("supabase_id")
+    if not supabase_id:
+        logger.error(f"Vendor {vendor_id} has no linked Supabase account")
+        raise HTTPException(status_code=500, detail="Vendor has no linked auth account")
+
+    try:
+        supabase_admin.auth.admin.update_user_by_id(supabase_id, {"password": data.password})
+    except AuthApiError as e:
+        logger.error(f"Password reset failed for vendor {vendor_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    logger.info(f"Successfully reset password for vendor {vendor_id}")
+    return {"message": "Password reset successfully", "vendor_id": vendor_id}
