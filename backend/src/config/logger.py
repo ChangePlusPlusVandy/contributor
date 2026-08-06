@@ -1,18 +1,23 @@
 # src/config/logger.py
 import logging
+import os
 from pathlib import Path
 
 LOG_LEVEL = logging.INFO  # Change to DEBUG for local debugging
 
 LOG_FILE = Path(__file__).resolve().parents[2] / "backend.log"
 
+handlers = [logging.StreamHandler()]
+
+# Render captures stdout and its disk is ephemeral, so a log file there is
+# unreadable and grows until the instance restarts.
+if not os.getenv("RENDER"):
+    handlers.append(logging.FileHandler(LOG_FILE, encoding="utf-8"))
+
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(LOG_FILE, encoding="utf-8"),
-    ],
+    handlers=handlers,
 )
 
 # httpx logs every outbound request URL at INFO, which exposes the Supabase
