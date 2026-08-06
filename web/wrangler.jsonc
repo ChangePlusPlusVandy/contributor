@@ -1,0 +1,10 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "wttin-web",
+	"compatibility_date": "2026-08-05",
+	"assets": {
+		"directory": "./dist",
+		// Unmatched paths return index.html with 200 so BrowserRouter can route them.
+		"not_found_handling": "single-page-application"
+	}
+}
