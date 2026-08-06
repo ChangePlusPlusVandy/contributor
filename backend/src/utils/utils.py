@@ -186,15 +186,15 @@ def extract_field_data(raw_data):
         'org_email': raw_data.get('q16_orgEmail')
     }
 
-    print(f'optional field data before checking for empty/None: {optional_fields}')
-    
+    logger.debug(f"optional fields with values: {sorted(k for k, v in optional_fields.items() if v)}")
+
     # Only add optional fields if they have values (not empty string or None)
     for key, value in optional_fields.items():
         if value:  # This filters out None and empty strings
             resource_data[key] = value
 
-    print(f"resource data after filtering: {resource_data}")
-    
+    logger.debug(f"resource data fields after filtering: {sorted(resource_data)}")
+
     return resource_data
 
 # def normalize_hours():
